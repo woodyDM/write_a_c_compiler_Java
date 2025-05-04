@@ -2,7 +2,6 @@ package cn.deepmax.jfx.parse;
 
 import cn.deepmax.jfx.lexer.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -18,15 +17,15 @@ public class Parser {
         this.len = this.tokenList.size();
     }
 
-    public AST.Program parseProgram() {
-        AST.FunctionDefinition fnDef = parseFunctionDefinition();
-        AST.Program p = new AST.Program(fnDef);
+    public Ast.AstProgram parseProgram() {
+        Ast.FunctionDefinition fnDef = parseFunctionDefinition();
+        Ast.AstProgram p = new Ast.AstProgram(fnDef);
 
         expect(TokenType.EOF, NoneParams.NONE);
         return p;
     }
 
-    public AST.FunctionDefinition parseFunctionDefinition() {
+    public Ast.FunctionDefinition parseFunctionDefinition() {
 
         expect(TokenType.KEYWORD, new StringTokenParam("int"));
         Token idToken = expect(TokenType.ID, null);
@@ -36,27 +35,27 @@ public class Parser {
         expect(TokenType.KEYWORD, new StringTokenParam("void"));
         expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
         expect(TokenType.OPEN_BRACE, NoneParams.NONE);
-        AST.Statement stmt = parseStatement();
+        Ast.ReturnStatement stmt = parseStatement();
         expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
 
-        AST.FunctionDefinition fn = new AST.FunctionDefinition(idName, stmt);
+        Ast.FunctionDefinition fn = new Ast.FunctionDefinition(idName, stmt);
 
         return fn;
 
     }
 
-    public AST.Statement parseStatement() {
+    public Ast.ReturnStatement parseStatement() {
         expect(TokenType.KEYWORD, new StringTokenParam("return"));
-        AST.Exp node = parseExp();
-        AST.Statement statement = new AST.Statement(node);
+        Ast.IntExp node = parseExp();
+        Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
     }
 
-    public AST.Exp parseExp() {
+    public Ast.IntExp parseExp() {
         Token intToken = expect(TokenType.CONSTANT, null);
         String v = ((Tokens.Constant) intToken).params().toString();
-        return new AST.Exp(Integer.parseInt(v));
+        return new Ast.IntExp(Integer.parseInt(v));
     }
 
     /**

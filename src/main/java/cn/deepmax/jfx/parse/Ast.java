@@ -1,12 +1,12 @@
 package cn.deepmax.jfx.parse;
 
-public class AST {
+public class Ast {
 
 
-    public static class Program implements AstNode {
+    public static class AstProgram implements AstNode.Program {
         public final FunctionDefinition functionDef;
 
-        public Program(FunctionDefinition functionDef) {
+        public AstProgram(FunctionDefinition functionDef) {
             this.functionDef = functionDef;
         }
 
@@ -16,11 +16,11 @@ public class AST {
         }
     }
 
-    public static class FunctionDefinition implements AstNode {
+    public static class FunctionDefinition implements AstNode.FunctionDef {
         public final String name;
-        public final Statement body;
+        public final AstNode.Statement body;
 
-        public FunctionDefinition(String name, Statement body) {
+        public FunctionDefinition(String name, ReturnStatement body) {
             this.name = name;
             this.body = body;
         }
@@ -31,37 +31,29 @@ public class AST {
         }
     }
 
-    public static class Statement implements AstNode {
-        public final Exp exp;
+    public static class ReturnStatement implements AstNode.Statement {
+        public final AstNode.Exp intExp;
 
-        public Statement(Exp exp) {
-            this.exp = exp;
+        public ReturnStatement(IntExp intExp) {
+            this.intExp = intExp;
         }
 
         @Override
         public String toString() {
-            return String.format("Statement(%s)", exp.toString());
+            return String.format("Statement(%s)", intExp.toString());
         }
     }
 
-    public static class Exp implements AstNode {
+    public static class IntExp implements AstNode.Exp {
         public final int value;
 
-        public Exp(int value) {
+        public IntExp(int value) {
             this.value = value;
         }
 
         @Override
         public String toString() {
             return String.format("Constant(%s)", value + "");
-        }
-    }
-
-    public static class Identifier implements AstNode {
-        public final String name;
-
-        public Identifier(String name) {
-            this.name = name;
         }
     }
 
