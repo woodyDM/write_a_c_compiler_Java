@@ -1,4 +1,4 @@
-package cn.deepmax.jfx;
+package cn.deepmax.jfx.lexer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class Lexer {
         if (pos >= len) return null;
         if (isSymbol(data[pos])) {
             byte b = data[pos];
-            Token r = null;
+            Token r;
             switch (b) {
                 case '(' -> r = new Tokens.OpenParenthesis();
                 case ')' -> r = new Tokens.CloseParenthesis();

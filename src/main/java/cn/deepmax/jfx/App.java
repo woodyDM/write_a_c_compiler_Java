@@ -1,25 +1,29 @@
 package cn.deepmax.jfx;
 
-import java.io.PrintStream;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import cn.deepmax.jfx.lexer.Lexer;
+import cn.deepmax.jfx.parse.AstNode;
+import cn.deepmax.jfx.parse.Parser;
 
 public class App {
+//    static String input =
+//            """
+//                    int main(void){
+//                        return 12;    \t\t
+//                        \n
+//                    }
+//                    """;
     static String input =
             """
                     int main(void){  
-                        return 1;    \t\t
-                        \n
-                    }  
+                        return  10;
+                        }
+                         
                     """;
 
     public static void main(String[] args) {
         Lexer lexer = new Lexer(input);
-        Token t=null;
-        while ((t = lexer.nextToken()) != null) {
-            System.out.println(t);
-        }
+        Parser p = new Parser(lexer);
+        AstNode root = p.parseProgram();
+        System.out.println(root.toString());
     }
 }

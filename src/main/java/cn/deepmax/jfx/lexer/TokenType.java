@@ -1,4 +1,4 @@
-package cn.deepmax.jfx;
+package cn.deepmax.jfx.lexer;
 
 public enum TokenType {
     ID,
