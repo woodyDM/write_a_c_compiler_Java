@@ -1,6 +1,8 @@
 package cn.deepmax.jfx.lexer;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class Lexer {
@@ -14,11 +16,22 @@ public class Lexer {
         this.len = this.data.length;
     }
 
+    public List<Token> tokenList() {
+        List<Token> r = new ArrayList<>();
+        Token t;
+        while (true) {
+            t = nextToken();
+            r.add(t);
+            if (t == Tokens.EOF.INS) break;
+        }
+        return r;
+    }
+
     public Token nextToken() {
         while (pos < len && isWhitespace(data[pos])) {
             pos++;
         }
-        if (pos >= len) return null;
+        if (pos >= len) return Tokens.EOF.INS;
         if (isSymbol(data[pos])) {
             byte b = data[pos];
             Token r;

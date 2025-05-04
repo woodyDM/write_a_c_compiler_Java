@@ -55,6 +55,12 @@ public class Tokens {
         }
     }
 
+    public static class EOF extends Base {
+        public static final EOF INS = new EOF();
+        public EOF() {
+            super(TokenType.EOF);
+        }
+    }
 
     public static class StringBase extends Base {
         private final StringTokenParam value;

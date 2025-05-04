@@ -9,4 +9,6 @@ public enum TokenType {
     OPEN_BRACE,//{
     CLOSE_BRACE,//}
     SEMICOLON, //;
+
+    EOF,
 }
