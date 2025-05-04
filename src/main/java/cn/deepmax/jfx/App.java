@@ -11,7 +11,7 @@ public class App {
                     (  void ) {
                         return 12;    \t\t
                         \n
-                    }
+                    }af
                     """;
 //    static String input =
 //            """

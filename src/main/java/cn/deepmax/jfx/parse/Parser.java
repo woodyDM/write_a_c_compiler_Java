@@ -65,18 +65,20 @@ public class Parser {
      * @return
      */
     private Token expect(TokenType type, TokenParams tokenValue) {
-        String paramStr = tokenValue == null ? "" : tokenValue.toString();
+        String paramStr
+                = tokenValue == null ? "any value" : (Objects.equals(NoneParams.NONE, tokenValue) ? "" : tokenValue.toString());
+        String msg = paramStr.isEmpty() ? "" : " with value " + paramStr;
         if (pos >= len) {
-            throw new ParseException("Expect %s with value %s,but get %s\n", type.name(), paramStr, "EOF");
+            throw new ParseException("Expect %s%s,but get %s\n", type.name(), msg, "EOF");
         }
         Token token = tokenList.get(pos++);
         if (token == null) {
-            throw new ParseException("Expect %s with value %s,but get null\n", type.name(), paramStr);
+            throw new ParseException("Expect %s%s,but get null\n", type.name(), msg);
         }
         if (token.type() == type && (tokenValue == null || Objects.equals(tokenValue, token.params()))) {
             return token;
         }
-        throw new ParseException("Expect %s with value %s,but get %s\n", type.name(), paramStr, token.toString());
+        throw new ParseException("Expect %s%s,but get %s\n", type.name(), msg, token.toString());
     }
 
 }
