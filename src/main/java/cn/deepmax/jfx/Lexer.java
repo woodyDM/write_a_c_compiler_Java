@@ -35,18 +35,40 @@ public class Lexer {
         }
         byte start = data[pos];
         String value = readUntil(b -> isWhitespace(b) || isSymbol(b));
-        if ('0' <= start && start <= '9') {
-            return new Tokens.Constant(value);
+        if (isDigit(start)) {
+            if (allMatch(value, b -> isDigit(b))) {
+                return new Tokens.Constant(value);
+            } else {
+                throw new IllegalStateException("invalid token " + value);
+            }
         }
+
         Set<String> KEYWORDS = Set.of("int", "void", "return");
         if (KEYWORDS.contains(value)) {
             return new Tokens.Keyword(value);
         }
-        return new Tokens.Id(value);
+
+        boolean allW = allMatch(value, b -> isW(b));
+        if (allW) {
+            return new Tokens.Id(value);
+        } else {
+            throw new UnsupportedOperationException("invalid token " + value);
+        }
     }
 
     interface BytePredicate {
         boolean test(byte b);
+    }
+
+    private static boolean allMatch(String s, BytePredicate fn) {
+        if (s == null || s.isBlank()) {
+            throw new IllegalStateException("invalid s");
+        }
+        byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+        for (byte b : bytes) {
+            if (!fn.test(b)) return false;
+        }
+        return true;
     }
 
     private String readUntil(BytePredicate until) {
@@ -61,6 +83,18 @@ public class Lexer {
 
     static boolean isSymbol(byte b) {
         return b == '(' || b == ')' || b == '{' || b == '}' || b == ';';
+    }
+
+    static boolean isDigit(byte b) {
+        return '0' <= b && b <= '9';
+    }
+
+    static boolean isAlpha(byte b) {
+        return ('A' <= b && b <= 'Z') || ('a' <= b && b <= 'z');
+    }
+
+    static boolean isW(byte b) {
+        return isDigit(b) || isAlpha(b) || b == '_';
     }
 
     static boolean isWhitespace(byte b) {

@@ -10,7 +10,7 @@ public class App {
     static String input =
             """
                     int main(void){  
-                        return 2;    \t\t
+                        return 1;    \t\t
                         \n
                     }  
                     """;
