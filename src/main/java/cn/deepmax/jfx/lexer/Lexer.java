@@ -1,5 +1,7 @@
 package cn.deepmax.jfx.lexer;
 
+import com.sun.source.tree.BreakTree;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,13 +9,20 @@ import java.util.Set;
 
 public class Lexer {
 
-    private final byte[] data;
+    final byte[] data;
+    final String txt;
     private final int len;
-    private int pos = 0;
+    int pos = 0;
 
     public Lexer(String s) {
+        txt = s;
         this.data = s.getBytes(StandardCharsets.UTF_8);
         this.len = this.data.length;
+    }
+
+    String nearSubString() {
+        int max = Math.min(len, pos + 10);
+        return txt.substring(pos, max);
     }
 
     public List<Token> tokenList() {
@@ -32,23 +41,30 @@ public class Lexer {
             pos++;
         }
         if (pos >= len) return Tokens.EOF.INS;
-        if (isSymbol(data[pos])) {
-            byte b = data[pos];
-            Token r;
-            switch (b) {
-                case '(' -> r = new Tokens.OpenParenthesis();
-                case ')' -> r = new Tokens.CloseParenthesis();
-                case '{' -> r = new Tokens.OpenBrace();
-                case '}' -> r = new Tokens.CloseBrace();
-                case ';' -> r = new Tokens.Semicolon();
-                default -> throw new UnsupportedOperationException("invalid symbol " + b);
-            }
+        byte cb = data[pos];
+        if (isSymbol(cb) || isOperand(cb)) {
+            Token r = switch (cb) {
+                case '(' -> new Tokens.OpenParenthesis();
+                case ')' -> new Tokens.CloseParenthesis();
+                case '{' -> new Tokens.OpenBrace();
+                case '}' -> new Tokens.CloseBrace();
+                case ';' -> new Tokens.Semicolon();
+                case '~' -> new Tokens.Bitwise();
+                case '-' -> {
+                    if (pos + 1 < len && data[pos + 1] == '-') {
+                        pos++;
+                        yield new Tokens.Decrement();
+                    } else {
+                        yield new Tokens.Neg();
+                    }
+                }
+                default -> throw new LexerException(this, "invalid symbol " + cb);
+            };
             pos++;
             return r;
         }
-        byte start = data[pos];
-        String value = readUntil(b -> isWhitespace(b) || isSymbol(b));
-        if (isDigit(start)) {
+        String value = readUntil(b -> isWhitespace(b) || isSymbol(b) || isOperand(b));
+        if (isDigit(cb)) {
             if (allMatch(value, b -> isDigit(b))) {
                 return new Tokens.Constant(value);
             } else {
@@ -73,9 +89,9 @@ public class Lexer {
         boolean test(byte b);
     }
 
-    private static boolean allMatch(String s, BytePredicate fn) {
+    private boolean allMatch(String s, BytePredicate fn) {
         if (s == null || s.isBlank()) {
-            throw new IllegalStateException("invalid s");
+            throw new LexerException(this, "empty input string");
         }
         byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
         for (byte b : bytes) {
@@ -92,6 +108,10 @@ public class Lexer {
         byte[] d = new byte[pos - start];
         System.arraycopy(data, start, d, 0, d.length);
         return new String(d, StandardCharsets.UTF_8);
+    }
+
+    static boolean isOperand(byte b) {
+        return b == '~' || b == '-';
     }
 
     static boolean isSymbol(byte b) {

@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class Parser {
-
-
-    private final List<Token> tokenList;
+    public final List<Token> tokenList;
     private int pos = 0;
     private final int len;
 

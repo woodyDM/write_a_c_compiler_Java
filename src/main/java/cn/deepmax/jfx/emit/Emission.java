@@ -1,7 +1,6 @@
 package cn.deepmax.jfx.emit;
 
 import cn.deepmax.jfx.asm.Asm;
-import cn.deepmax.jfx.asm.AsmAst;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
 
 import java.util.List;
@@ -35,8 +34,8 @@ public class Emission {
         for (AssemblyConstruct.Instruction it : instructions) {
             sb.append("\t");
             switch (it) {
-                case Asm.Mov mov -> sb.append("movl ").append(genOperand(mov.src)).append(", ")
-                        .append(genOperand(mov.dest)) ;
+                case Asm.Mov mov -> sb.append("movl\t").append(genOperand(mov.src)).append(", ")
+                        .append(genOperand(mov.dest));
 
                 case Asm.Ret ret -> sb.append("ret");
                 default -> throw new UnsupportedOperationException(it.toString());

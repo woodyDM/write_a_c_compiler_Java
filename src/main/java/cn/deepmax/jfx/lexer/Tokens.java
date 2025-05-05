@@ -55,8 +55,27 @@ public class Tokens {
         }
     }
 
+    public static class Bitwise extends Base {
+        public Bitwise() {
+            super(TokenType.BITWISE);
+        }
+    }
+
+    public static class Neg extends Base {
+        public Neg() {
+            super(TokenType.NEG);
+        }
+    }
+
+    public static class Decrement extends Base {
+        public Decrement() {
+            super(TokenType.DECREMENT);
+        }
+    }
+
     public static class EOF extends Base {
         public static final EOF INS = new EOF();
+
         public EOF() {
             super(TokenType.EOF);
         }
