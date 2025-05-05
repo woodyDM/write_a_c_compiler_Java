@@ -3,6 +3,8 @@ package cn.deepmax.jfx;
 import cn.deepmax.jfx.asm.AsmAst;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
 import cn.deepmax.jfx.emit.Emission;
+import cn.deepmax.jfx.ir.IR;
+import cn.deepmax.jfx.ir.IRConverter;
 import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
@@ -16,7 +18,7 @@ public class App {
             """
                     int main   \t\t\r  \n
                     (  void ) {
-                        return -4;    \t\t
+                        return ~(-4);    \t\t
                         \n
                     }
                     """;
@@ -27,6 +29,11 @@ public class App {
 //                        }
 //                    """;
 
+    enum TestLevel {
+        LEX,
+        PARSE,
+        CODEGEN
+    }
 
     public static void main(String[] args) {
         String v = System.getProperty("test");
@@ -38,15 +45,26 @@ public class App {
         String path = args[1];
         try {
             String inputSource = Files.readString(Paths.get(path));
-            runTest(inputSource);
+            runTest(args[0], inputSource);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void runTest(String source) {
+    private static void runTest(String level, String source) {
         Lexer lexer = new Lexer(source);
         Parser p = new Parser(lexer);
+        if("--lex".equals(level)) return;
+
+        Ast.AstProgram astProgram = p.parseProgram();
+        if("--parse".equals(level)) return;
+
+        IRConverter irConverter = new IRConverter(astProgram);
+        IR.Program irProgram = irConverter.convertToIR();
+        if("--tacky".equals(level)) return;
+
+        if("--codegen".equals(level)) return;
+
         Ast.AstProgram ast = p.parseProgram();
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(ast);
         String asmCode = Emission.codegen(asmAst);
@@ -62,6 +80,12 @@ public class App {
         Ast.AstProgram ast = p.parseProgram();
         System.out.println("--------- parser ---------");
         System.out.println(ast.toString());
+
+
+        IRConverter irConverter = new IRConverter(ast);
+        IR.Program irProgram = irConverter.convertToIR();
+        System.out.println("--------- ir ---------");
+        System.out.println(irProgram.toString());
 
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(ast);
         System.out.println("--------- asm ast ---------");

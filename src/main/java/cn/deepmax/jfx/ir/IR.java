@@ -1,20 +1,18 @@
-package cn.deepmax.jfx.parse;
+package cn.deepmax.jfx.ir;
 
-public interface AstNode {
-
+public interface IR {
     interface Program {
     }
 
     interface FunctionDef {
     }
 
-    interface Statement {
+    interface Instruction {
     }
 
-    interface Exp {
+    interface Val {
     }
 
     interface UnaryOperator {
     }
-
 }
