@@ -55,7 +55,7 @@ public class Tokens {
         }
     }
 
-    public static class Bitwise extends Base {
+    public static class Bitwise extends Base  {
         public Bitwise() {
             super(TokenType.BITWISE);
         }

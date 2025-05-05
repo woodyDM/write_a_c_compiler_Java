@@ -14,5 +14,8 @@ public interface AstNode {
     interface Exp {
     }
 
+    interface UnaryOperator {
+    }
+
 
 }

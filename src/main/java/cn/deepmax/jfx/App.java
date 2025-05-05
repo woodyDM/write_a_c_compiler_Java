@@ -16,7 +16,7 @@ public class App {
             """
                     int main   \t\t\r  \n
                     (  void ) {
-                        return 4-;    \t\t
+                        return -4;    \t\t
                         \n
                     }
                     """;

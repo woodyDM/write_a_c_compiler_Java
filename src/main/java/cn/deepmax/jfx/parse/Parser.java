@@ -27,33 +27,54 @@ public class Parser {
 
         expect(TokenType.KEYWORD, new StringTokenParam("int"));
         Token idToken = expect(TokenType.ID, null);
-        String idName = ((Tokens.Id) idToken).params().toString();
+        String idName = idToken.params().toString();
 
         expect(TokenType.OPEN_PARENTHESIS, NoneParams.NONE);
         expect(TokenType.KEYWORD, new StringTokenParam("void"));
         expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
         expect(TokenType.OPEN_BRACE, NoneParams.NONE);
-        Ast.ReturnStatement stmt = parseStatement();
+        AstNode.Statement stmt = parseStatement();
         expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
 
-        Ast.FunctionDefinition fn = new Ast.FunctionDefinition(idName, stmt);
-
-        return fn;
-
+        return new Ast.FunctionDefinition(idName, stmt);
     }
 
-    public Ast.ReturnStatement parseStatement() {
+    public AstNode.Statement parseStatement() {
         expect(TokenType.KEYWORD, new StringTokenParam("return"));
-        Ast.IntExp node = parseExp();
+        AstNode.Exp node = parseExp();
         Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
     }
 
-    public Ast.IntExp parseExp() {
-        Token intToken = expect(TokenType.CONSTANT, null);
-        String v = ((Tokens.Constant) intToken).params().toString();
-        return new Ast.IntExp(Integer.parseInt(v));
+    public AstNode.Exp parseExp() {
+        Token token = moveToNextToken();
+        return switch (token.type()) {
+            case CONSTANT -> {
+                String v = token.params().toString();
+                yield new Ast.IntExp(Integer.parseInt(v));
+            }
+            case BITWISE, NEG -> {
+                AstNode.UnaryOperator op = parseOp(token);
+                var innerExp = parseExp();
+                yield new Ast.Unary(op, innerExp);
+            }
+            case OPEN_PARENTHESIS -> {
+                AstNode.Exp inner = parseExp();
+                expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
+                yield inner;
+            }
+            default -> throw new UnsupportedOperationException("Malformed exp:" + token.toString());
+        };
+
+    }
+
+    private AstNode.UnaryOperator parseOp(Token token) {
+        return switch (token.type()) {
+            case BITWISE -> new Ast.UnaryOpComplement();
+            case NEG -> new Ast.UnaryOpNegate();
+            default -> throw new UnsupportedOperationException(token.toString());
+        };
     }
 
     /**
@@ -76,6 +97,20 @@ public class Parser {
             return token;
         }
         throw new ParseException("Expect %s%s,but get %s\n", type.name(), msg, token.toString());
+    }
+
+    private Token moveToNextToken() {
+        var t = getNextToken();
+        moveNext();
+        return t;
+    }
+
+    private Token getNextToken() {
+        return tokenList.get(pos);
+    }
+
+    private void moveNext() {
+        pos++;
     }
 
 }
