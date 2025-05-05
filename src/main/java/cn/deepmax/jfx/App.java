@@ -2,6 +2,7 @@ package cn.deepmax.jfx;
 
 import cn.deepmax.jfx.asm.AsmAst;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
+import cn.deepmax.jfx.emit.Emission;
 import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
@@ -30,5 +31,9 @@ public class App {
 
         System.out.println(ast.toString());
         System.out.println(asmAst);
+
+        String asmCode = Emission.codegen(asmAst);
+        System.out.println("----");
+        System.out.println(asmCode);
     }
 }
