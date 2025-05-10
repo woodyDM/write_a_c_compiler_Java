@@ -15,6 +15,10 @@ public enum TokenType {
     NEG("-"),
     DECREMENT("--"),
 
+    PLUS("+"),
+    MULTIP("*"),
+    DIV("/"),
+    REMINDER("%"),
     EOF,
     ;
 
@@ -27,5 +31,10 @@ public enum TokenType {
 
     TokenType(String value) {
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return value == null || value.isBlank() ? this.name() : "[" + value + "]";
     }
 }

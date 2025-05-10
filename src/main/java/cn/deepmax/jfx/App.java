@@ -17,13 +17,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 
 public class App {
     static String input =
             """
-                    int main   \t\t\r  \n
+                      main   \t\t\r  \n
                     (  void ) {
-                        return ~(-4);    \t\t
+                        return - 4 * 4  %  2;    \t\t
                         \n
                     }
                     """;

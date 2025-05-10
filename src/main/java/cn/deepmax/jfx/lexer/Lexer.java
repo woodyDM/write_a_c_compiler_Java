@@ -50,6 +50,12 @@ public class Lexer {
                 case '}' -> new Tokens.CloseBrace();
                 case ';' -> new Tokens.Semicolon();
                 case '~' -> new Tokens.Bitwise();
+
+                case '+' -> new Tokens.Plus();
+                case '*' -> new Tokens.Multi();
+                case '/' -> new Tokens.Divide();
+                case '%' -> new Tokens.Remainder();
+
                 case '-' -> {
                     if (pos + 1 < len && data[pos + 1] == '-') {
                         pos++;
@@ -111,7 +117,7 @@ public class Lexer {
     }
 
     static boolean isOperand(byte b) {
-        return b == '~' || b == '-';
+        return b == '~' || b == '-' || b == '+' || b == '*' || b == '/' || b == '%';
     }
 
     static boolean isSymbol(byte b) {

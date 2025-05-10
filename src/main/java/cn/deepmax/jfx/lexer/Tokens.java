@@ -55,9 +55,33 @@ public class Tokens {
         }
     }
 
-    public static class Bitwise extends Base  {
+    public static class Bitwise extends Base {
         public Bitwise() {
             super(TokenType.BITWISE);
+        }
+    }
+
+    public static class Multi extends Base {
+        public Multi() {
+            super(TokenType.MULTIP);
+        }
+    }
+
+    public static class Divide extends Base {
+        public Divide() {
+            super(TokenType.DIV);
+        }
+    }
+
+    public static class Remainder extends Base {
+        public Remainder() {
+            super(TokenType.REMINDER);
+        }
+    }
+
+    public static class Plus extends Base {
+        public Plus() {
+            super(TokenType.PLUS);
         }
     }
 
@@ -113,7 +137,7 @@ public class Tokens {
 
         @Override
         public String toString() {
-            return this.getClass().getSimpleName();
+            return type.toString();
         }
 
         @Override
