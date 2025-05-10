@@ -38,14 +38,14 @@ public class IRConverter {
 
     private IR.Val convertValue(AstNode.Exp exp, List<IR.Instruction> list) {
         return switch (exp) {
-            case Ast.IntExp ip -> new IRType.Constant(ip.value());
-            case Ast.Unary u -> {
-                var src = convertValue(u.exp(), list);
-                var dst = IRType.Var.makeTemp();
-                var op = convertUnaryOp(u);
-                list.add(new IRType.Unary(op, src, dst));
-                yield dst;
-            }
+            case null -> new IRType.Constant(23);
+//            case Ast.Unary u -> {
+//                var src = convertValue(u.exp(), list);
+//                var dst = IRType.Var.makeTemp();
+//                var op = convertUnaryOp(u);
+//                list.add(new IRType.Unary(op, src, dst));
+//                yield dst;
+//            }
             default -> throw new UnsupportedOperationException(exp.toString());
         };
     }

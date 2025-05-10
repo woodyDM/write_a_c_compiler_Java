@@ -17,17 +17,46 @@ public class Ast {
     }
 
     public record IntExp(int value)
-            implements AstNode.Exp {
+            implements AstNode.Factor {
+    }
+
+    public record FactorExp(AstNode.Factor factor) implements AstNode.Exp {
+
+    }
+
+    public record ExpFactor(AstNode.Exp exp) implements AstNode.Factor {
+
     }
 
     public record Unary(AstNode.UnaryOperator operator, AstNode.Exp exp)
+            implements AstNode.Factor {
+    }
+
+    public record Binary(AstNode.BinaryOperator operator, AstNode.Exp left, AstNode.Exp right)
             implements AstNode.Exp {
+
     }
 
     public record UnaryOpComplement() implements AstNode.UnaryOperator {
     }
 
     public record UnaryOpNegate() implements AstNode.UnaryOperator {
+    }
+
+    public record Add() implements AstNode.BinaryOperator {
+
+    }
+
+    public record Subtract() implements AstNode.BinaryOperator {
+    }
+
+    public record Multiply() implements AstNode.BinaryOperator {
+    }
+
+    public record Divide() implements AstNode.BinaryOperator {
+    }
+
+    public record Remainder() implements AstNode.BinaryOperator {
     }
 
 }

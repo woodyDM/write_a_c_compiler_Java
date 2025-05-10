@@ -22,9 +22,9 @@ import java.util.Arrays;
 public class App {
     static String input =
             """
-                      main   \t\t\r  \n
+                   int   main   \t\t\r  \n
                     (  void ) {
-                        return - 4 * 4  %  2;    \t\t
+                        return - 7 + 4 / 4  *  2;    \t\t
                         \n
                     }
                     """;

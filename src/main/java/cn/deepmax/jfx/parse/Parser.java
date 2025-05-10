@@ -41,13 +41,13 @@ public class Parser {
 
     public AstNode.Statement parseStatement() {
         expect(TokenType.KEYWORD, new StringTokenParam("return"));
-        AstNode.Exp node = parseExp();
+        AstNode.Exp node = parseExp(0);
         Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
     }
 
-    public AstNode.Exp parseExp() {
+    public AstNode.Factor parseFactor() {
         Token token = moveToNextToken();
         return switch (token.type()) {
             case CONSTANT -> {
@@ -56,18 +56,43 @@ public class Parser {
             }
             case BITWISE, NEG -> {
                 AstNode.UnaryOperator op = parseOp(token);
-                var innerExp = parseExp();
+                var innerExp = parseExp(0);
                 yield new Ast.Unary(op, innerExp);
             }
             case OPEN_PARENTHESIS -> {
-                AstNode.Exp inner = parseExp();
+                AstNode.Exp inner = parseExp(0);
                 expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
-                yield inner;
+                yield new Ast.ExpFactor(inner);
             }
             default -> throw new UnsupportedOperationException("Malformed exp:" + token.toString());
         };
-
     }
+
+    public AstNode.Exp parseExp(int minPrec) {
+        AstNode.Exp left = new Ast.FactorExp(parseFactor());
+        Token nextToken = getNextToken();
+        while (nextToken.type().isBinaryOp() && nextToken.type().prec() >= minPrec) {
+            moveNext();
+            var op = parseBinop(nextToken);
+
+            AstNode.Exp right = parseExp(nextToken.type().prec() + 1);
+            left = new Ast.Binary(op, left, right);
+            nextToken = getNextToken();
+        }
+        return left;
+    }
+
+    private AstNode.BinaryOperator parseBinop(Token token) {
+        return switch (token) {
+            case Tokens.Plus p -> new Ast.Add();
+            case Tokens.Neg n -> new Ast.Subtract();
+            case Tokens.Multi m -> new Ast.Multiply();
+            case Tokens.Divide d -> new Ast.Divide();
+            case Tokens.Remainder r -> new Ast.Remainder();
+            default -> throw new UnsupportedOperationException("invalid token " + token.toString());
+        };
+    }
+
 
     private AstNode.UnaryOperator parseOp(Token token) {
         return switch (token.type()) {

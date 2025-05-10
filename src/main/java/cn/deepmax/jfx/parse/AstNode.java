@@ -14,7 +14,13 @@ public interface AstNode {
     interface Exp {
     }
 
+    interface Factor {
+
+    }
+
     interface UnaryOperator {
     }
 
+    interface BinaryOperator {
+    }
 }

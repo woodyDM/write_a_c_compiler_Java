@@ -1,5 +1,7 @@
 package cn.deepmax.jfx.lexer;
 
+import cn.deepmax.jfx.parse.Ast;
+
 public enum TokenType {
 
     ID,
@@ -12,25 +14,42 @@ public enum TokenType {
     SEMICOLON(";"),
 
     BITWISE("~"),
-    NEG("-"),
+    NEG("-", 45),
     DECREMENT("--"),
 
-    PLUS("+"),
-    MULTIP("*"),
-    DIV("/"),
-    REMINDER("%"),
+    PLUS("+", 45),
+    MULTIP("*", 50),
+    DIV("/", 50),
+    REMINDER("%", 50),
     EOF,
     ;
 
 
     public final String value;
+    public final Integer prec;
 
     TokenType() {
-        this(null);
+        this(null, null);
     }
 
     TokenType(String value) {
+        this(value, null);
+    }
+
+    TokenType(String value, Integer p) {
         this.value = value;
+        this.prec = p;
+    }
+
+    public int prec() {
+        if ((prec == null)) {
+            throw new UnsupportedOperationException("invalid op " + this.name());
+        }
+        return prec.intValue();
+    }
+
+    public boolean isBinaryOp() {
+        return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG;
     }
 
     @Override
