@@ -4,7 +4,6 @@ import cn.deepmax.jfx.asm.Asm;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
 
 import java.util.List;
-import java.util.Objects;
 
 public class Emission {
 
@@ -49,6 +48,18 @@ public class Emission {
                     String opd = genOperand(un.operand());
                     pushIns(String.format("%s\t%s", uop, opd));
                 }
+                case Asm.Binary b -> {
+                    String op = genBinaryOperator(b.op());
+                    String src = genOperand(b.operand());
+                    String dst = genOperand(b.dst());
+                    pushIns(String.format("%s\t%s,\t%s", op, src, dst));
+                }
+                case Asm.Cdq c -> {
+                    pushIns("cdq");
+                }
+                case Asm.Idiv d -> {
+                    pushIns("idivl\t" + genOperand(d.operand()));
+                }
                 case Asm.AllocateStack s -> {
                     pushIns("subq\t$" + s.size() + ",\t%rsp");
                 }
@@ -66,12 +77,23 @@ public class Emission {
         };
     }
 
+    private String genBinaryOperator(AssemblyConstruct.BinaryOperator op) {
+        return switch (op) {
+            case Asm.AddOp n -> "addl";
+            case Asm.SubOp n -> "subl";
+            case Asm.MultOp n -> "imull";
+            default -> throw new UnsupportedOperationException(op.toString());
+        };
+    }
+
     private String genOperand(AssemblyConstruct.Operand op) {
         return switch (op) {
             case Asm.Register register -> {
                 yield switch (register.reg()) {
                     case Asm.AX ax -> "%eax";
+                    case Asm.DX d -> "%edx";
                     case Asm.R10D d -> "%r10d";
+                    case Asm.R11D d -> "%r11d";
                     default -> throw new UnsupportedOperationException(register.reg().toString());
                 };
             }

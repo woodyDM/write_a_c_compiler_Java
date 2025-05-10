@@ -1,7 +1,5 @@
 package cn.deepmax.jfx.lexer;
 
-import cn.deepmax.jfx.parse.Ast;
-
 public enum TokenType {
 
     ID,

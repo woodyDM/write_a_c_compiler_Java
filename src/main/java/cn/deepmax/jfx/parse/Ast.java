@@ -16,7 +16,7 @@ public class Ast {
             implements AstNode.Statement {
     }
 
-    public record IntExp(int value)
+    public record IntConstantFactor(int value)
             implements AstNode.Factor {
     }
 
@@ -28,7 +28,7 @@ public class Ast {
 
     }
 
-    public record Unary(AstNode.UnaryOperator operator, AstNode.Exp exp)
+    public record Unary(AstNode.UnaryOperator operator, AstNode.Factor factor)
             implements AstNode.Factor {
     }
 

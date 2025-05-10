@@ -52,19 +52,19 @@ public class Parser {
         return switch (token.type()) {
             case CONSTANT -> {
                 String v = token.params().toString();
-                yield new Ast.IntExp(Integer.parseInt(v));
+                yield new Ast.IntConstantFactor(Integer.parseInt(v));
             }
             case BITWISE, NEG -> {
                 AstNode.UnaryOperator op = parseOp(token);
-                var innerExp = parseExp(0);
-                yield new Ast.Unary(op, innerExp);
+                var innerFact = parseFactor();
+                yield new Ast.Unary(op, innerFact);
             }
             case OPEN_PARENTHESIS -> {
                 AstNode.Exp inner = parseExp(0);
                 expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
                 yield new Ast.ExpFactor(inner);
             }
-            default -> throw new UnsupportedOperationException("Malformed exp:" + token.toString());
+            default -> throw new UnsupportedOperationException("Malformed factor:" + token.toString());
         };
     }
 

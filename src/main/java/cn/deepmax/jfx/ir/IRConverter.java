@@ -39,9 +39,9 @@ public class IRConverter {
     private IR.Val convertValue(AstNode.Exp exp, List<IR.Instruction> list) {
         return switch (exp) {
             case Ast.FactorExp f -> switch (f.factor()) {
-                case Ast.IntExp i -> new IRType.Constant(i.value());
+                case Ast.IntConstantFactor i -> new IRType.Constant(i.value());
                 case Ast.Unary u -> {
-                    var src = convertValue(u.exp(), list);
+                    var src = convertValue(new Ast.FactorExp(u.factor()), list);
                     var dst = IRType.Var.makeTemp();
                     var op = convertUnaryOp(u);
                     list.add(new IRType.Unary(op, src, dst));

@@ -1,7 +1,5 @@
 package cn.deepmax.jfx.lexer;
 
-import com.sun.source.tree.BreakTree;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;

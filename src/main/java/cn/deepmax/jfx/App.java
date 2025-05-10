@@ -10,21 +10,18 @@ import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
 import cn.deepmax.jfx.utils.ProcessRunner;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
 
 public class App {
     static String input =
             """
                    int   main   \t\t\r  \n
                     (  void ) {
-                        return - 7 + 4 / 4  *  2;    \t\t
+                        return ~2+3;    \t\t
                         \n
                     }
                     """;
