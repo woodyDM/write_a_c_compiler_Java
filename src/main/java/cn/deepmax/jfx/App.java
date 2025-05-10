@@ -54,20 +54,19 @@ public class App {
     private static void runTest(String level, String source) {
         Lexer lexer = new Lexer(source);
         Parser p = new Parser(lexer);
-        if("--lex".equals(level)) return;
+        if ("--lex".equals(level)) return;
 
         Ast.AstProgram astProgram = p.parseProgram();
-        if("--parse".equals(level)) return;
+        if ("--parse".equals(level)) return;
 
         IRConverter irConverter = new IRConverter(astProgram);
         IR.Program irProgram = irConverter.convertToIR();
-        if("--tacky".equals(level)) return;
+        if ("--tacky".equals(level)) return;
 
-        if("--codegen".equals(level)) return;
 
-        Ast.AstProgram ast = p.parseProgram();
-        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(ast);
-        String asmCode = Emission.codegen(asmAst);
+        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
+        if ("--codegen".equals(level)) return;
+        //String asmCode = Emission.codegen(asmAst);
 
     }
 
@@ -87,7 +86,7 @@ public class App {
         System.out.println("--------- ir ---------");
         System.out.println(irProgram.toString());
 
-        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(ast);
+        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
         System.out.println("--------- asm ast ---------");
         System.out.println(asmAst);
 

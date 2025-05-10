@@ -28,14 +28,14 @@ public class Emission {
     }
 
     private void genInstruction() {
-        AssemblyConstruct.FunctionDef functionDef = program.functionDef;
+        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
         Asm.Function fn = (Asm.Function) functionDef;
-        List<AssemblyConstruct.Instruction> instructions = fn.instructions;
+        List<AssemblyConstruct.Instruction> instructions = fn.instructions();
         for (AssemblyConstruct.Instruction it : instructions) {
             sb.append("\t");
             switch (it) {
-                case Asm.Mov mov -> sb.append("movl\t").append(genOperand(mov.src)).append(", ")
-                        .append(genOperand(mov.dest));
+                case Asm.Mov mov -> sb.append("movl\t").append(genOperand(mov.src())).append(", ")
+                        .append(genOperand(mov.dest()));
 
                 case Asm.Ret ret -> sb.append("ret");
                 default -> throw new UnsupportedOperationException(it.toString());
@@ -46,17 +46,17 @@ public class Emission {
 
     private String genOperand(AssemblyConstruct.Operand op) {
         return switch (op) {
-            case Asm.Imm imm -> String.format("$%d", imm.v);
+            case Asm.Imm imm -> String.format("$%d", imm.v());
             case Asm.Register register -> "%eax";
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
 
     private void genFuncdef() {
-        AssemblyConstruct.FunctionDef functionDef = program.functionDef;
+        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
         Asm.Function fn = (Asm.Function) functionDef;
-        sb.append("\t.globl ").append(fn.name).append("\n")
-                .append(fn.name).append(":\n");
+        sb.append("\t.globl ").append(fn.name()).append("\n")
+                .append(fn.name()).append(":\n");
     }
 
     private void genProgram() {

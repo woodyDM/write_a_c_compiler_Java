@@ -5,11 +5,9 @@ import cn.deepmax.jfx.parse.AstNode;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class IRConverter {
 
-    static AtomicLong varId = new AtomicLong(0);
     private AstNode.Program program;
 
     public IRConverter(AstNode.Program program) {
@@ -43,7 +41,7 @@ public class IRConverter {
             case Ast.IntExp ip -> new IRType.Constant(ip.value());
             case Ast.Unary u -> {
                 var src = convertValue(u.exp(), list);
-                var dst = new IRType.Var(makeTempVarName());
+                var dst = IRType.Var.makeTemp();
                 var op = convertUnaryOp(u);
                 list.add(new IRType.Unary(op, src, dst));
                 yield dst;
@@ -59,10 +57,5 @@ public class IRConverter {
             default -> throw new UnsupportedOperationException(u.toString());
         };
     }
-
-    private String makeTempVarName() {
-        return "var." + varId.getAndIncrement();
-    }
-
 
 }

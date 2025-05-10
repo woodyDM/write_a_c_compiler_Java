@@ -1,73 +1,75 @@
 package cn.deepmax.jfx.asm;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Asm {
 
-    public static class AsmProgram implements AssemblyConstruct.Program {
-        public AssemblyConstruct.FunctionDef functionDef;
+    public record AsmProgram(AssemblyConstruct.FunctionDef functionDef) implements AssemblyConstruct.Program {
 
-        @Override
-        public String toString() {
-            return String.format("AsmProgram(%s)", functionDef.toString());
+    }
+
+    public record Function(String name,
+                           List<AssemblyConstruct.Instruction> instructions)
+            implements AssemblyConstruct.FunctionDef {
+
+    }
+
+    public record Unary(AssemblyConstruct.UnaryOperator op,
+                        AssemblyConstruct.Operand operand) implements AssemblyConstruct.Instruction {
+
+    }
+
+    public record Ret() implements AssemblyConstruct.Instruction {
+
+    }
+
+    public record Mov(AssemblyConstruct.Operand src,
+                      AssemblyConstruct.Operand dest) implements AssemblyConstruct.Instruction {
+        public static List<Mov> makeMove(AssemblyConstruct.Operand src,
+                                         AssemblyConstruct.Operand dest) {
+            if (src instanceof Stack && dest instanceof Stack) {
+                return List.of(
+                        new Mov(src, Register.R10D()),
+                        new Mov(Register.R10D(), dest)
+                );
+            } else {
+                return List.of(new Mov(src, dest));
+            }
         }
     }
 
-    public static class Function implements AssemblyConstruct.FunctionDef {
-        public final String name;
-        public List<AssemblyConstruct.Instruction> instructions;
+    public record AllocateStack(int size) implements AssemblyConstruct.Instruction {
 
-        public Function(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("Function(name=%s;instructions=%s)", name, instructions
-                    .stream().map(m -> m.toString()).collect(Collectors.joining(",")));
-        }
     }
 
-    public static class Ret implements AssemblyConstruct.Instruction {
-        @Override
-        public String toString() {
-            return "Ret";
-        }
+    public record Neg() implements AssemblyConstruct.UnaryOperator {
     }
 
-    public static class Mov implements AssemblyConstruct.Instruction {
-        public final AssemblyConstruct.Operand src;
-        public final AssemblyConstruct.Operand dest;
-
-        public Mov(AssemblyConstruct.Operand src, AssemblyConstruct.Operand dest) {
-            this.src = src;
-            this.dest = dest;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("Mov(src=%s,dest=%s)", src, dest);
-        }
+    public record Not() implements AssemblyConstruct.UnaryOperator {
     }
 
-    public static class Imm implements AssemblyConstruct.Operand {
-        public final int v;
-
-        public Imm(int v) {
-            this.v = v;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("Imm(%s)", v + "");
-        }
+    public record AX() implements AssemblyConstruct.Reg {
     }
 
-    public static class Register implements AssemblyConstruct.Operand {
-        @Override
-        public String toString() {
-            return "Register";
+    public record R10D() implements AssemblyConstruct.Reg {
+    }
+
+
+    public record Stack(int pos) implements AssemblyConstruct.Operand {
+    }
+
+    public record Pseudo(String id) implements AssemblyConstruct.Operand {
+
+    }
+
+    public record Imm(int v) implements AssemblyConstruct.Operand {
+
+    }
+
+    public record Register(AssemblyConstruct.Reg reg) implements AssemblyConstruct.Operand {
+
+        public static Register R10D() {
+            return new Register(new R10D());
         }
     }
 

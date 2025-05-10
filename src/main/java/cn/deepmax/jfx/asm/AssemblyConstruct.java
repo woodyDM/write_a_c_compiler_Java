@@ -1,18 +1,28 @@
 package cn.deepmax.jfx.asm;
 
 public interface AssemblyConstruct {
-    interface Program{
+    interface Program {
 
     }
 
-    interface FunctionDef{
-
-    }
-    interface Operand {
+    interface FunctionDef {
 
     }
 
     interface Instruction {
+
+
+    }
+
+    interface UnaryOperator {
+
+    }
+
+    interface Operand {
+
+    }
+
+    interface Reg {
 
     }
 }
