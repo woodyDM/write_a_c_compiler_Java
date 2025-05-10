@@ -5,6 +5,11 @@ import cn.deepmax.jfx.lexer.*;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 主要是 recursive dscent parsing 解析
+ * 中间有部分是： precedence climbing
+ * 还有个技术是 pratt parsing ，听说和上面的是等价
+ */
 public class Parser {
     public final List<Token> tokenList;
     private int pos = 0;
