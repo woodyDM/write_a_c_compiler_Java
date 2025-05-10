@@ -46,10 +46,29 @@ public class IRType {
     public record Unary(IR.UnaryOperator op, IR.Val src, IR.Val dst) implements IR.Instruction {
     }
 
+    public record Binary(IR.BinaryOperator op, IR.Val src1, IR.Val src2, IR.Val dst) implements IR.Instruction {
+
+    }
+
     public record FunctionDef(String identifier, List<IR.Instruction> body) implements IR.FunctionDef {
     }
 
     public record Program(IR.FunctionDef functionDef) implements IR.Program {
 
+    }
+
+    public record Add() implements IR.BinaryOperator {
+    }
+
+    public record Subtract() implements IR.BinaryOperator {
+    }
+
+    public record Multiply() implements IR.BinaryOperator {
+    }
+
+    public record Divide() implements IR.BinaryOperator {
+    }
+
+    public record Remainder() implements IR.BinaryOperator {
     }
 }

@@ -15,4 +15,8 @@ public interface IR {
 
     interface UnaryOperator {
     }
+
+    interface BinaryOperator{
+
+    }
 }
