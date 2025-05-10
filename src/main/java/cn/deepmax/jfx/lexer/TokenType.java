@@ -19,6 +19,19 @@ public enum TokenType {
     MULTIP("*", 50),
     DIV("/", 50),
     REMINDER("%", 50),
+
+    //logic op
+    NOT("!"),
+    AND("&&"),
+    OR("||"),
+    EQUAL_TO("=="),
+    NOT_EQUAL_TO("!="),
+    LESS_THAN("<"),
+    GREATER_THAN(">"),
+    LESS_THAN_OR_EQ("<="),
+    GREATER_THAN_OR_EQ(">="),
+
+    SHARP("#"),
     EOF,
     ;
 

@@ -21,7 +21,7 @@ public class App {
             """
                    int   main   \t\t\r  \n
                     (  void ) {
-                        return ~2+3;    \t\t
+                        return ~2+3 / 7;    \t\t
                         \n
                     }
                     """;

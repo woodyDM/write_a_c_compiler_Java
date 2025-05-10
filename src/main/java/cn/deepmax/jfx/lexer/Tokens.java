@@ -1,6 +1,8 @@
 package cn.deepmax.jfx.lexer;
 
 public class Tokens {
+    private Tokens() {
+    }
 
     public static class Id extends StringBase {
         public Id(String name) {
@@ -84,6 +86,61 @@ public class Tokens {
             super(TokenType.PLUS);
         }
     }
+
+    public static class Not extends Base {
+        public Not() {
+            super(TokenType.NOT);
+        }
+    }
+
+    public static class And extends Base {
+        public And() {
+            super(TokenType.AND);
+        }
+    }
+
+    public static class Or extends Base {
+        public Or() {
+            super(TokenType.OR);
+        }
+    }
+
+    public static class EqualTo extends Base {
+        public EqualTo() {
+            super(TokenType.EQUAL_TO);
+        }
+    }
+
+    public static class NotEqualTo extends Base {
+        public NotEqualTo() {
+            super(TokenType.NOT_EQUAL_TO);
+        }
+    }
+
+    public static class LessThan extends Base {
+        public LessThan() {
+            super(TokenType.LESS_THAN);
+        }
+    }
+
+    public static class LessThanOrEq extends Base {
+        public LessThanOrEq() {
+            super(TokenType.LESS_THAN_OR_EQ);
+        }
+    }
+
+    public static class GreaterThan extends Base {
+        public GreaterThan() {
+            super(TokenType.GREATER_THAN);
+        }
+    }
+
+    public static class GreaterThanOrEq extends Base {
+        public GreaterThanOrEq() {
+            super(TokenType.GREATER_THAN_OR_EQ);
+        }
+    }
+
 
     public static class Neg extends Base {
         public Neg() {

@@ -34,13 +34,22 @@ public class Lexer {
         return r;
     }
 
+    private Token parseNextTwo(char next, Token single, Token two) {
+        if (pos + 1 < len && data[pos + 1] == next) {
+            pos++;
+            return two;
+        } else {
+            return single;
+        }
+    }
+
     public Token nextToken() {
         while (pos < len && isWhitespace(data[pos])) {
             pos++;
         }
         if (pos >= len) return Tokens.EOF.INS;
         byte cb = data[pos];
-        if (isSymbol(cb) || isOperand(cb)) {
+        if (isSymbol(cb) || isOperand(cb) || isLogic(cb)) {
             Token r = switch (cb) {
                 case '(' -> new Tokens.OpenParenthesis();
                 case ')' -> new Tokens.CloseParenthesis();
@@ -54,20 +63,24 @@ public class Lexer {
                 case '/' -> new Tokens.Divide();
                 case '%' -> new Tokens.Remainder();
 
-                case '-' -> {
-                    if (pos + 1 < len && data[pos + 1] == '-') {
-                        pos++;
-                        yield new Tokens.Decrement();
-                    } else {
-                        yield new Tokens.Neg();
-                    }
-                }
+                case '-' -> parseNextTwo('-', new Tokens.Neg(), new Tokens.Decrement());
+
+                case '&' -> parseNextTwo('&', null, new Tokens.And());
+                case '!' -> parseNextTwo('=', new Tokens.Not(), new Tokens.NotEqualTo());
+                case '|' -> parseNextTwo('|', null, new Tokens.Or());
+                case '=' -> parseNextTwo('=', null, new Tokens.EqualTo());
+                case '<' -> parseNextTwo('=', new Tokens.LessThan(), new Tokens.LessThanOrEq());
+                case '>' -> parseNextTwo('=', new Tokens.GreaterThan(), new Tokens.GreaterThanOrEq());
+
                 default -> throw new LexerException(this, "invalid symbol " + cb);
             };
             pos++;
+            if (r == null) {
+                throw new UnsupportedOperationException("invalid byte " + (char) cb);
+            }
             return r;
         }
-        String value = readUntil(b -> isWhitespace(b) || isSymbol(b) || isOperand(b));
+        String value = readUntil(b -> isWhitespace(b) || isSymbol(b) || isOperand(b) || isLogic(b));
         if (isDigit(cb)) {
             if (allMatch(value, b -> isDigit(b))) {
                 return new Tokens.Constant(value);
@@ -104,6 +117,7 @@ public class Lexer {
         return true;
     }
 
+
     private String readUntil(BytePredicate until) {
         int start = pos;
         while (pos < len && !until.test(data[pos])) {
@@ -116,6 +130,10 @@ public class Lexer {
 
     static boolean isOperand(byte b) {
         return b == '~' || b == '-' || b == '+' || b == '*' || b == '/' || b == '%';
+    }
+
+    static boolean isLogic(byte b) {
+        return b == '!' || b == '&' || b == '|' || b == '<' || b == '>' || b == '=';
     }
 
     static boolean isSymbol(byte b) {
