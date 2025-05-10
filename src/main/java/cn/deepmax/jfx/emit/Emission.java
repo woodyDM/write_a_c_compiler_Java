@@ -4,6 +4,7 @@ import cn.deepmax.jfx.asm.Asm;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
 
 import java.util.List;
+import java.util.Objects;
 
 public class Emission {
 
@@ -21,9 +22,9 @@ public class Emission {
     }
 
     public String codegen() {
-        genProgram();
         genFuncdef();
         genInstruction();
+        genProgram();
         return sb.toString();
     }
 
@@ -32,22 +33,50 @@ public class Emission {
         Asm.Function fn = (Asm.Function) functionDef;
         List<AssemblyConstruct.Instruction> instructions = fn.instructions();
         for (AssemblyConstruct.Instruction it : instructions) {
-            sb.append("\t");
-            switch (it) {
-                case Asm.Mov mov -> sb.append("movl\t").append(genOperand(mov.src())).append(", ")
-                        .append(genOperand(mov.dest()));
 
-                case Asm.Ret ret -> sb.append("ret");
+            switch (it) {
+                case Asm.Mov mov -> sb.append("\tmovl\t")
+                        .append(genOperand(mov.src())).append(",\t")
+                        .append(genOperand(mov.dest())).append("\n");
+
+                case Asm.Ret ret -> {
+                    pushIns("movq\t%rbp,\t%rsp");
+                    pushIns("popq\t%rbp");
+                    pushIns("ret");
+                }
+                case Asm.Unary un -> {
+                    String uop = genUnaryOperator(un.op());
+                    String opd = genOperand(un.operand());
+                    pushIns(String.format("%s\t%s", uop, opd));
+                }
+                case Asm.AllocateStack s -> {
+                    pushIns("subq\t$" + s.size() + ",\t%rsp");
+                }
                 default -> throw new UnsupportedOperationException(it.toString());
             }
-            sb.append("\n");
+
         }
+    }
+
+    private String genUnaryOperator(AssemblyConstruct.UnaryOperator op) {
+        return switch (op) {
+            case Asm.Neg n -> "negl";
+            case Asm.Not n -> "notl";
+            default -> throw new UnsupportedOperationException(op.toString());
+        };
     }
 
     private String genOperand(AssemblyConstruct.Operand op) {
         return switch (op) {
-            case Asm.Imm imm -> String.format("$%d", imm.v());
-            case Asm.Register register -> "%eax";
+            case Asm.Register register -> {
+                yield switch (register.reg()) {
+                    case Asm.AX ax -> "%eax";
+                    case Asm.R10D d -> "%r10d";
+                    default -> throw new UnsupportedOperationException(register.reg().toString());
+                };
+            }
+            case Asm.Stack s -> s.pos() + "(%rbp)";
+            case Asm.Imm imm -> "$" + imm.v();
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
@@ -57,6 +86,12 @@ public class Emission {
         Asm.Function fn = (Asm.Function) functionDef;
         sb.append("\t.globl ").append(fn.name()).append("\n")
                 .append(fn.name()).append(":\n");
+        pushIns("pushq %rbp");
+        pushIns("movq  %rsp, %rbp");
+    }
+
+    private void pushIns(String ins) {
+        sb.append("\t").append((ins)).append("\n");
     }
 
     private void genProgram() {
