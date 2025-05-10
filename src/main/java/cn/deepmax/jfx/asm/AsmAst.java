@@ -2,8 +2,6 @@ package cn.deepmax.jfx.asm;
 
 import cn.deepmax.jfx.ir.IR;
 import cn.deepmax.jfx.ir.IRType;
-import cn.deepmax.jfx.parse.Ast;
-import cn.deepmax.jfx.parse.AstNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,11 +47,44 @@ public class AsmAst {
                     list.addAll(Asm.Mov.makeMove(transOperand(s.src()), transOperand(s.dst())));
                     list.add(new Asm.Unary(convertUnaryOp(s.op()), transOperand(s.dst())));
                 }
+                case IRType.Binary b -> {
+                    IR.BinaryOperator op = b.op();
+                    if (op instanceof IRType.Divide) {
+                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), new Asm.Register(new Asm.AX())));
+                        list.add(new Asm.Cdq());
+                        list.addAll(Asm.Idiv.make(transOperand(b.src2())));
+                        list.addAll(Asm.Mov.makeMove(new Asm.Register(new Asm.AX()), transOperand(b.dst())));
+                    } else if (op instanceof IRType.Remainder) {
+                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), new Asm.Register(new Asm.AX())));
+                        list.add(new Asm.Cdq());
+                        list.addAll(Asm.Idiv.make(transOperand(b.src2())));
+                        list.addAll(Asm.Mov.makeMove(new Asm.Register(new Asm.DX()), transOperand(b.dst())));
+                    } else if (op instanceof IRType.Add || op instanceof IRType.Subtract || op instanceof IRType.Multiply) {
+                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), transOperand(b.dst())));
+                        list.addAll(Asm.Binary.make(
+                                        convertBinaryOp(op),
+                                        transOperand(b.src2()),
+                                        transOperand(b.dst())
+                                )
+                        );
+
+                    } else
+                        throw new UnsupportedOperationException("invalid op " + b.op());
+                }
                 default -> throw new UnsupportedOperationException(body.toString());
             }
         }
 
         return list;
+    }
+
+    private AssemblyConstruct.BinaryOperator convertBinaryOp(IR.BinaryOperator op) {
+        return switch (op) {
+            case IRType.Add a -> new Asm.AddOp();
+            case IRType.Subtract a -> new Asm.SubOp();
+            case IRType.Multiply a -> new Asm.MultOp();
+            default -> throw new UnsupportedOperationException(op.toString());
+        };
     }
 
     private AssemblyConstruct.UnaryOperator convertUnaryOp(IR.UnaryOperator op) {
@@ -69,6 +100,7 @@ public class AsmAst {
             case IRType.Constant c -> new Asm.Imm(c.v());
             case IRType.Var v -> {
                 int off = v.getStackOffset();
+                //directly return stack
                 yield new Asm.Stack(-off);
             }
             default -> throw new UnsupportedOperationException(exp.toString());

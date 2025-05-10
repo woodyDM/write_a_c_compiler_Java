@@ -18,6 +18,10 @@ public interface AssemblyConstruct {
 
     }
 
+    interface BinaryOperator {
+
+    }
+
     interface Operand {
 
     }
