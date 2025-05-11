@@ -29,7 +29,7 @@ public class Lexer {
         while (true) {
             t = nextToken();
             r.add(t);
-            if (t == Tokens.EOF.INS) break;
+            if (t == TokenType.EOF) break;
         }
         return r;
     }
@@ -47,30 +47,30 @@ public class Lexer {
         while (pos < len && isWhitespace(data[pos])) {
             pos++;
         }
-        if (pos >= len) return Tokens.EOF.INS;
+        if (pos >= len) return TokenType.EOF;
         byte cb = data[pos];
         if (isSymbol(cb) || isOperand(cb) || isLogic(cb)) {
             Token r = switch (cb) {
-                case '(' -> new Tokens.OpenParenthesis();
-                case ')' -> new Tokens.CloseParenthesis();
-                case '{' -> new Tokens.OpenBrace();
-                case '}' -> new Tokens.CloseBrace();
-                case ';' -> new Tokens.Semicolon();
-                case '~' -> new Tokens.Bitwise();
+                case '(' -> TokenType.OPEN_PARENTHESIS;
+                case ')' -> TokenType.CLOSE_PARENTHESIS;
+                case '{' -> TokenType.OPEN_BRACE;
+                case '}' -> TokenType.CLOSE_BRACE;
+                case ';' -> TokenType.SEMICOLON;
+                case '~' -> TokenType.BITWISE;
 
-                case '+' -> new Tokens.Plus();
-                case '*' -> new Tokens.Multi();
-                case '/' -> new Tokens.Divide();
-                case '%' -> new Tokens.Remainder();
+                case '+' -> TokenType.PLUS;
+                case '*' -> TokenType.MULTIP;
+                case '/' -> TokenType.DIV;
+                case '%' -> TokenType.REMINDER;
 
-                case '-' -> parseNextTwo('-', new Tokens.Neg(), new Tokens.Decrement());
+                case '-' -> parseNextTwo('-', TokenType.NEG, TokenType.DECREMENT);
 
-                case '&' -> parseNextTwo('&', null, new Tokens.And());
-                case '!' -> parseNextTwo('=', new Tokens.Not(), new Tokens.NotEqualTo());
-                case '|' -> parseNextTwo('|', null, new Tokens.Or());
-                case '=' -> parseNextTwo('=', null, new Tokens.EqualTo());
-                case '<' -> parseNextTwo('=', new Tokens.LessThan(), new Tokens.LessThanOrEq());
-                case '>' -> parseNextTwo('=', new Tokens.GreaterThan(), new Tokens.GreaterThanOrEq());
+                case '&' -> parseNextTwo('&', null, TokenType.AND);
+                case '!' -> parseNextTwo('=', TokenType.NOT, TokenType.NOT_EQUAL_TO);
+                case '|' -> parseNextTwo('|', null, TokenType.OR);
+                case '=' -> parseNextTwo('=', null, TokenType.EQUAL_TO);
+                case '<' -> parseNextTwo('=', TokenType.LESS_THAN, TokenType.LESS_THAN_OR_EQ);
+                case '>' -> parseNextTwo('=', TokenType.GREATER_THAN, TokenType.GREATER_THAN_OR_EQ);
 
                 default -> throw new LexerException(this, "invalid symbol " + cb);
             };

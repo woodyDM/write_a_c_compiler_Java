@@ -89,11 +89,11 @@ public class Parser {
 
     private AstNode.BinaryOperator parseBinop(Token token) {
         return switch (token) {
-            case Tokens.Plus p -> Ast.BinaryOp.Add;
-            case Tokens.Neg n -> Ast.BinaryOp.Subtract;
-            case Tokens.Multi m -> Ast.BinaryOp.Multiply;
-            case Tokens.Divide d -> Ast.BinaryOp.Divide;
-            case Tokens.Remainder r -> Ast.BinaryOp.Remainder;
+            case TokenType.PLUS -> Ast.BinaryOp.Add;
+            case TokenType.NEG -> Ast.BinaryOp.Subtract;
+            case TokenType.MULTIP -> Ast.BinaryOp.Multiply;
+            case TokenType.DIV -> Ast.BinaryOp.Divide;
+            case TokenType.REMINDER -> Ast.BinaryOp.Remainder;
             default -> throw new UnsupportedOperationException("invalid token " + token.toString());
         };
     }
