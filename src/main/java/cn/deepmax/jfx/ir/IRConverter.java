@@ -51,12 +51,51 @@ public class IRConverter {
                 default -> throw new UnsupportedOperationException("invalid factor " + f.factor().toString());
             };
             case Ast.Binary b -> {
-                var v1 = convertValue(b.left(), list);
-                var v2 = convertValue(b.right(), list);
-                var dst = IRType.Var.makeTemp();
-                IR.BinaryOperator op = convertBinaryOp(b.operator());
-                list.add(new IRType.Binary(op, v1, v2, dst));
-                yield dst;
+                var bop = b.operator();
+                if (bop == Ast.BinaryOp.And) {
+                    //should support short-circuit
+                    String falseLabel = "and_false_label." + IRType.Label.id.getAndIncrement();
+                    String exitLabel = "and_exit_label." + IRType.Label.id.getAndIncrement();
+                    var dst = IRType.Var.makeTemp();
+
+                    var v1 = convertValue(b.left(), list);
+                    list.add(new IRType.JumpIfZero(v1, falseLabel));
+                    var v2 = convertValue(b.right(), list);
+                    list.add(new IRType.JumpIfZero(v2, falseLabel));
+                    list.add(new IRType.Copy(new IRType.Constant(1), dst));
+                    list.add(new IRType.Jump(exitLabel));
+                    list.add(new IRType.Label(falseLabel));
+                    list.add(new IRType.Copy(new IRType.Constant(0), dst));
+                    list.add(new IRType.Label(exitLabel));
+
+                    yield dst;
+                } else if (bop == Ast.BinaryOp.Or) {
+                    //should support short-circuit
+                    String trueLabel = "or_true_label." + IRType.Label.id.getAndIncrement();
+                    String exitLabel = "or_exit_label." + IRType.Label.id.getAndIncrement();
+                    var dst = IRType.Var.makeTemp();
+
+                    var v1 = convertValue(b.left(), list);
+                    list.add(new IRType.JumpIfNotZero(v1, trueLabel));
+                    var v2 = convertValue(b.right(), list);
+                    list.add(new IRType.JumpIfNotZero(v2, trueLabel));
+                    list.add(new IRType.Copy(new IRType.Constant(0), dst));
+                    list.add(new IRType.Jump(exitLabel));
+                    list.add(new IRType.Label(trueLabel));
+                    list.add(new IRType.Copy(new IRType.Constant(1), dst));
+                    list.add(new IRType.Label(exitLabel));
+
+                    yield dst;
+                } else {
+                    //normal operators
+                    var v1 = convertValue(b.left(), list);
+                    var v2 = convertValue(b.right(), list);
+                    var dst = IRType.Var.makeTemp();
+                    IR.BinaryOperator op = convertBinaryOp(b.operator());
+                    list.add(new IRType.Binary(op, v1, v2, dst));
+                    yield dst;
+                }
+
             }
             default -> throw new UnsupportedOperationException(exp.toString());
         };
@@ -69,6 +108,15 @@ public class IRConverter {
             case Ast.BinaryOp.Multiply -> IRType.BinaryOp.Multiply;
             case Ast.BinaryOp.Divide -> IRType.BinaryOp.Divide;
             case Ast.BinaryOp.Remainder -> IRType.BinaryOp.Remainder;
+
+            case Ast.BinaryOp.Equal -> IRType.BinaryOp.Equal;
+            case Ast.BinaryOp.NotEqual -> IRType.BinaryOp.NotEqual;
+            case Ast.BinaryOp.And -> IRType.BinaryOp.And;
+            case Ast.BinaryOp.Or -> IRType.BinaryOp.Or;
+            case Ast.BinaryOp.LessThan -> IRType.BinaryOp.LessThan;
+            case Ast.BinaryOp.LessOrEqual -> IRType.BinaryOp.LessOrEqual;
+            case Ast.BinaryOp.GreaterThan -> IRType.BinaryOp.GreaterThan;
+            case Ast.BinaryOp.GreaterOrEqual -> IRType.BinaryOp.GreaterOrEqual;
             default -> throw new UnsupportedOperationException("invalid binary op " + operator);
         };
     }
@@ -77,6 +125,7 @@ public class IRConverter {
         return switch (u.operator()) {
             case Ast.UnaryOp.Complement -> IRType.UnaryOp.Complement;
             case Ast.UnaryOp.Negate -> IRType.UnaryOp.Negate;
+            case Ast.UnaryOp.Not -> IRType.UnaryOp.Not;
             default -> throw new UnsupportedOperationException(u.toString());
         };
     }

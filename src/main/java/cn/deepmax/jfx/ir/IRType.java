@@ -44,6 +44,23 @@ public class IRType {
 
     }
 
+    public record Copy(IR.Val src, IR.Val dst) implements IR.Instruction {
+    }
+
+    public record Jump(String targetIdentifier) implements IR.Instruction {
+    }
+
+    public record JumpIfZero(IR.Val condition, String target) implements IR.Instruction {
+    }
+
+    public record JumpIfNotZero(IR.Val condition, String target) implements IR.Instruction {
+    }
+
+    public record Label(String identifier) implements IR.Instruction {
+        public static AtomicInteger id = new AtomicInteger(0);
+    }
+
+
     public record FunctionDef(String identifier, List<IR.Instruction> body) implements IR.FunctionDef {
     }
 
@@ -53,7 +70,8 @@ public class IRType {
 
     public enum UnaryOp implements IR.UnaryOperator {
         Complement,
-        Negate
+        Negate,
+        Not
     }
 
     public enum BinaryOp implements IR.BinaryOperator {
@@ -61,7 +79,16 @@ public class IRType {
         Subtract,
         Multiply,
         Divide,
-        Remainder
+        Remainder,
+
+        And,
+        Or,
+        Equal,
+        NotEqual,
+        LessThan,
+        LessOrEqual,
+        GreaterThan,
+        GreaterOrEqual
     }
 
 }
