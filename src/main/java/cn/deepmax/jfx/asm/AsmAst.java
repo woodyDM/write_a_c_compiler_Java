@@ -44,8 +44,15 @@ public class AsmAst {
                     list.add(new Asm.Ret());
                 }
                 case IRType.Unary s -> {
-                    list.addAll(Asm.Mov.makeMove(transOperand(s.src()), transOperand(s.dst())));
-                    list.add(new Asm.Unary(convertUnaryOp(s.op()), transOperand(s.dst())));
+                    if (s.op() == IRType.UnaryOp.Not) {
+                        list.addAll(Asm.Cmp.make(new Asm.Imm(0), transOperand(s.src())));
+                        AssemblyConstruct.Operand dest = transOperand(s.dst());
+                        list.addAll(Asm.Mov.makeMove(new Asm.Imm(0), dest));
+                        list.add(new Asm.SetCC(Asm.CondiCodeValues.E, dest));
+                    } else {
+                        list.addAll(Asm.Mov.makeMove(transOperand(s.src()), transOperand(s.dst())));
+                        list.add(new Asm.Unary(convertUnaryOp(s.op()), transOperand(s.dst())));
+                    }
                 }
                 case IRType.Binary b -> {
                     IR.BinaryOperator op = b.op();
@@ -68,8 +75,34 @@ public class AsmAst {
                                 )
                         );
 
-                    } else
+                    } else if (op instanceof IRType.BinaryOp opp && opp.isLogic()) {
+                        list.addAll(Asm.Cmp.make(transOperand(b.src2()), transOperand(b.src1())));
+                        AssemblyConstruct.Operand dest = transOperand(b.dst());
+                        list.addAll(Asm.Mov.makeMove(new Asm.Imm(0), dest));
+                        list.add(new Asm.SetCC(convertCondCode(b.op()), dest));
+                    } else {
                         throw new UnsupportedOperationException("invalid op " + b.op());
+                    }
+                }
+                case IRType.Jump jp -> {
+                    list.add(new Asm.Jmp(jp.targetIdentifier()));
+                }
+                case IRType.JumpIfZero jp -> {
+                    list.addAll(Asm.Cmp.make(new Asm.Imm(0), transOperand(jp.condition())));
+                    list.add(new Asm.JmpCC(Asm.CondiCodeValues.E, jp.target()));
+                }
+                case IRType.JumpIfNotZero jp -> {
+                    list.addAll(Asm.Cmp.make(new Asm.Imm(0), transOperand(jp.condition())));
+                    list.add(new Asm.JmpCC(Asm.CondiCodeValues.NE, jp.target()));
+                }
+                case IRType.Label label -> {
+                    list.add(new Asm.Label(label.identifier()));
+                }
+                case IRType.Copy copy -> {
+                    list.addAll(Asm.Mov.makeMove(
+                            transOperand(copy.src()),
+                            transOperand(copy.dst())
+                    ));
                 }
                 default -> throw new UnsupportedOperationException(body.toString());
             }
@@ -83,6 +116,18 @@ public class AsmAst {
             case IRType.BinaryOp.Add -> Asm.BinaryOp.Add;
             case IRType.BinaryOp.Subtract -> Asm.BinaryOp.Sub;
             case IRType.BinaryOp.Multiply -> Asm.BinaryOp.Mult;
+            default -> throw new UnsupportedOperationException(op.toString());
+        };
+    }
+
+    private AssemblyConstruct.CondCode convertCondCode(IR.BinaryOperator op) {
+        return switch (op) {
+            case IRType.BinaryOp.Equal -> Asm.CondiCodeValues.E;
+            case IRType.BinaryOp.NotEqual -> Asm.CondiCodeValues.NE;
+            case IRType.BinaryOp.LessThan -> Asm.CondiCodeValues.L;
+            case IRType.BinaryOp.LessOrEqual -> Asm.CondiCodeValues.LE;
+            case IRType.BinaryOp.GreaterThan -> Asm.CondiCodeValues.G;
+            case IRType.BinaryOp.GreaterOrEqual -> Asm.CondiCodeValues.GE;
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }

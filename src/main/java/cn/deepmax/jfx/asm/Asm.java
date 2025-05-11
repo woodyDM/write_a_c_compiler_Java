@@ -82,6 +82,40 @@ public class Asm {
         }
     }
 
+    public record Cmp(AssemblyConstruct.Operand left,
+                      AssemblyConstruct.Operand right) implements AssemblyConstruct.Instruction {
+        public static List<AssemblyConstruct.Instruction> make(AssemblyConstruct.Operand left,
+                                                               AssemblyConstruct.Operand right) {
+            if (left instanceof Stack && right instanceof Stack) {
+                return List.of(
+                        new Mov(left, Register.R10D),
+                        new Cmp(Register.R10D, right)
+                );
+            } else if (right instanceof Imm) {
+                return List.of(
+                        new Mov(right, Register.R11D),
+                        new Cmp(left, Register.R11D)
+                );
+            } else {
+                return List.of(new Cmp(left, right));
+            }
+        }
+    }
+
+    public record Jmp(String targetId) implements AssemblyConstruct.Instruction {
+    }
+
+    public record Label(String id) implements AssemblyConstruct.Instruction {
+    }
+
+    public record JmpCC(AssemblyConstruct.CondCode condition,
+                        String targetId) implements AssemblyConstruct.Instruction {
+    }
+
+    public record SetCC(AssemblyConstruct.CondCode condition,
+                        AssemblyConstruct.Operand operand) implements AssemblyConstruct.Instruction {
+    }
+
     public static <T> List<T> fixBothStack(AssemblyConstruct.Operand src,
                                            AssemblyConstruct.Operand dest,
                                            BiFunction<AssemblyConstruct.Operand, AssemblyConstruct.Operand, T> construct) {
@@ -99,7 +133,7 @@ public class Asm {
     public record AllocateStack(int size) implements AssemblyConstruct.Instruction {
     }
 
-    public enum UnaryOp implements AssemblyConstruct.UnaryOperator{
+    public enum UnaryOp implements AssemblyConstruct.UnaryOperator {
         Neg,
         Not
     }
@@ -115,6 +149,15 @@ public class Asm {
         Add,
         Sub,
         Mult,
+    }
+
+    public enum CondiCodeValues implements AssemblyConstruct.CondCode {
+        E,
+        NE,
+        G,
+        GE,
+        L,
+        LE
     }
 
     public record Stack(int pos) implements AssemblyConstruct.Operand {

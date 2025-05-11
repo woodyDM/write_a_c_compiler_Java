@@ -83,12 +83,21 @@ public class IRType {
 
         And,
         Or,
+
         Equal,
         NotEqual,
         LessThan,
         LessOrEqual,
         GreaterThan,
-        GreaterOrEqual
+        GreaterOrEqual,
+
+        ;
+
+        public boolean isLogic() {
+            return this == Equal || this == NotEqual ||
+                    this == LessThan || this == LessOrEqual ||
+                    this == GreaterThan || this == GreaterOrEqual;
+        }
     }
 
 }
