@@ -65,7 +65,7 @@ public class AsmAst {
                         list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), Asm.Register.AX));
                         list.add(new Asm.Cdq());
                         list.addAll(Asm.Idiv.make(transOperand(b.src2())));
-                        list.addAll(Asm.Mov.makeMove(Asm.Register.AX, transOperand(b.dst())));
+                        list.addAll(Asm.Mov.makeMove(Asm.Register.DX, transOperand(b.dst())));
                     } else if (op == IRType.BinaryOp.Add || op == IRType.BinaryOp.Subtract || op == IRType.BinaryOp.Multiply) {
                         list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), transOperand(b.dst())));
                         list.addAll(Asm.Binary.make(

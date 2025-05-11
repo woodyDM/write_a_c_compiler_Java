@@ -157,7 +157,12 @@ public class Asm {
         G,
         GE,
         L,
-        LE
+        LE;
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
     }
 
     public record Stack(int pos) implements AssemblyConstruct.Operand {

@@ -28,15 +28,16 @@ public class ProcessRunner {
             // 读取并打印程序输出
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(process.getInputStream()));
+            StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
-                System.out.println(line);
+                sb.append(line).append("\n");
             }
-
             // 等待程序结束并获取退出码
             int exitCode = process.waitFor();
             System.out.println("\n程序退出码: " + exitCode);
-            if (exitCode != 0) throw new RuntimeException("Gcc exit code " + exitCode);
+            if (exitCode != 0)
+                throw new RuntimeException("Gcc exit code " + exitCode + "Error Info:\n" + sb.toString());
         } catch (IOException e) {
             System.err.println("执行命令时发生IO异常: " + e.getMessage());
             throw new RuntimeException(e);

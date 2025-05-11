@@ -63,6 +63,23 @@ public class Emission {
                 case Asm.AllocateStack s -> {
                     pushIns("subq\t$" + s.size() + ",\t%rsp");
                 }
+                case Asm.Cmp cmp -> {
+                    String left = genOperand(cmp.left());
+                    String right = genOperand(cmp.right());
+                    pushIns(String.format("cmpl\t%s,\t%s", left, right));
+                }
+                case Asm.Jmp jp -> {
+                    pushIns(String.format("jmp\t.L%s", jp.targetId()));
+                }
+                case Asm.JmpCC jpc -> {
+                    pushIns(String.format("j%s\t.L%s", jpc.condition().toString(), jpc.targetId()));
+                }
+                case Asm.SetCC scc -> {
+                    pushIns(String.format("set%s\t%s", scc.condition().toString(), genOperand1Byte(scc.operand())));
+                }
+                case Asm.Label label -> {
+                    pushIns(String.format(".L%s :", label.id()));
+                }
                 default -> throw new UnsupportedOperationException(it.toString());
             }
 
@@ -82,6 +99,22 @@ public class Emission {
             case Asm.BinaryOp.Add -> "addl";
             case Asm.BinaryOp.Sub -> "subl";
             case Asm.BinaryOp.Mult -> "imull";
+            default -> throw new UnsupportedOperationException(op.toString());
+        };
+    }
+
+    private String genOperand1Byte(AssemblyConstruct.Operand op) {
+        return switch (op) {
+            case Asm.Register register -> {
+                yield switch (register.reg()) {
+                    case Asm.Registers.AX -> "%al";
+                    case Asm.Registers.DX -> "%dl";
+                    case Asm.Registers.R10D -> "%r10b";
+                    case Asm.Registers.R11D -> "%r11b";
+                    default -> throw new UnsupportedOperationException(register.reg().toString());
+                };
+            }
+            case Asm.Stack s -> s.pos() + "(%rbp)";
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
