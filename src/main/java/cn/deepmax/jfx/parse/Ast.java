@@ -37,26 +37,18 @@ public class Ast {
 
     }
 
-    public record UnaryOpComplement() implements AstNode.UnaryOperator {
+    public enum UnaryOp implements AstNode.UnaryOperator {
+        Complement,
+        Negate,
+        Not
     }
 
-    public record UnaryOpNegate() implements AstNode.UnaryOperator {
-    }
-
-    public record Add() implements AstNode.BinaryOperator {
-
-    }
-
-    public record Subtract() implements AstNode.BinaryOperator {
-    }
-
-    public record Multiply() implements AstNode.BinaryOperator {
-    }
-
-    public record Divide() implements AstNode.BinaryOperator {
-    }
-
-    public record Remainder() implements AstNode.BinaryOperator {
+    public enum BinaryOp implements AstNode.BinaryOperator {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Remainder
     }
 
 }

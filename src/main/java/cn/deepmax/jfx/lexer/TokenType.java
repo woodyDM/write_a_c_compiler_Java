@@ -1,6 +1,6 @@
 package cn.deepmax.jfx.lexer;
 
-public enum TokenType {
+public enum TokenType implements Token {
 
     ID,
     CONSTANT,
@@ -35,7 +35,6 @@ public enum TokenType {
     EOF,
     ;
 
-
     public final String value;
     public final Integer prec;
 
@@ -63,8 +62,19 @@ public enum TokenType {
         return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG;
     }
 
+
     @Override
     public String toString() {
         return value == null || value.isBlank() ? this.name() : "[" + value + "]";
+    }
+
+    @Override
+    public TokenType type() {
+        return this;
+    }
+
+    @Override
+    public TokenParams params() {
+        return NoneParams.NONE;
     }
 }

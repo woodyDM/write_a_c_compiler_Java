@@ -71,17 +71,17 @@ public class Emission {
 
     private String genUnaryOperator(AssemblyConstruct.UnaryOperator op) {
         return switch (op) {
-            case Asm.Neg n -> "negl";
-            case Asm.Not n -> "notl";
+            case Asm.UnaryOp.Neg -> "negl";
+            case Asm.UnaryOp.Not -> "notl";
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
 
     private String genBinaryOperator(AssemblyConstruct.BinaryOperator op) {
         return switch (op) {
-            case Asm.AddOp n -> "addl";
-            case Asm.SubOp n -> "subl";
-            case Asm.MultOp n -> "imull";
+            case Asm.BinaryOp.Add -> "addl";
+            case Asm.BinaryOp.Sub -> "subl";
+            case Asm.BinaryOp.Mult -> "imull";
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
@@ -90,10 +90,10 @@ public class Emission {
         return switch (op) {
             case Asm.Register register -> {
                 yield switch (register.reg()) {
-                    case Asm.AX ax -> "%eax";
-                    case Asm.DX d -> "%edx";
-                    case Asm.R10D d -> "%r10d";
-                    case Asm.R11D d -> "%r11d";
+                    case Asm.Registers.AX -> "%eax";
+                    case Asm.Registers.DX -> "%edx";
+                    case Asm.Registers.R10D -> "%r10d";
+                    case Asm.Registers.R11D -> "%r11d";
                     default -> throw new UnsupportedOperationException(register.reg().toString());
                 };
             }

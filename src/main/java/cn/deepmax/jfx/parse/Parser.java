@@ -89,11 +89,11 @@ public class Parser {
 
     private AstNode.BinaryOperator parseBinop(Token token) {
         return switch (token) {
-            case Tokens.Plus p -> new Ast.Add();
-            case Tokens.Neg n -> new Ast.Subtract();
-            case Tokens.Multi m -> new Ast.Multiply();
-            case Tokens.Divide d -> new Ast.Divide();
-            case Tokens.Remainder r -> new Ast.Remainder();
+            case Tokens.Plus p -> Ast.BinaryOp.Add;
+            case Tokens.Neg n -> Ast.BinaryOp.Subtract;
+            case Tokens.Multi m -> Ast.BinaryOp.Multiply;
+            case Tokens.Divide d -> Ast.BinaryOp.Divide;
+            case Tokens.Remainder r -> Ast.BinaryOp.Remainder;
             default -> throw new UnsupportedOperationException("invalid token " + token.toString());
         };
     }
@@ -101,8 +101,8 @@ public class Parser {
 
     private AstNode.UnaryOperator parseOp(Token token) {
         return switch (token.type()) {
-            case BITWISE -> new Ast.UnaryOpComplement();
-            case NEG -> new Ast.UnaryOpNegate();
+            case BITWISE -> Ast.UnaryOp.Complement;
+            case NEG -> Ast.UnaryOp.Not;
             default -> throw new UnsupportedOperationException(token.toString());
         };
     }

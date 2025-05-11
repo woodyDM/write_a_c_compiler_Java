@@ -64,19 +64,19 @@ public class IRConverter {
 
     private IR.BinaryOperator convertBinaryOp(AstNode.BinaryOperator operator) {
         return switch (operator) {
-            case Ast.Add d -> new IRType.Add();
-            case Ast.Subtract s -> new IRType.Subtract();
-            case Ast.Multiply n -> new IRType.Multiply();
-            case Ast.Divide n -> new IRType.Divide();
-            case Ast.Remainder n -> new IRType.Remainder();
+            case Ast.BinaryOp.Add -> IRType.BinaryOp.Add;
+            case Ast.BinaryOp.Subtract -> IRType.BinaryOp.Subtract;
+            case Ast.BinaryOp.Multiply -> IRType.BinaryOp.Multiply;
+            case Ast.BinaryOp.Divide -> IRType.BinaryOp.Divide;
+            case Ast.BinaryOp.Remainder -> IRType.BinaryOp.Remainder;
             default -> throw new UnsupportedOperationException("invalid binary op " + operator);
         };
     }
 
     private IR.UnaryOperator convertUnaryOp(Ast.Unary u) {
         return switch (u.operator()) {
-            case Ast.UnaryOpComplement it -> new IRType.Complement();
-            case Ast.UnaryOpNegate it -> new IRType.Negate();
+            case Ast.UnaryOp.Complement -> IRType.UnaryOp.Complement;
+            case Ast.UnaryOp.Negate -> IRType.UnaryOp.Negate;
             default -> throw new UnsupportedOperationException(u.toString());
         };
     }

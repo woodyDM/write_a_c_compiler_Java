@@ -8,12 +8,6 @@ public class IRType {
     private IRType() {
     }
 
-    public record Complement() implements IR.UnaryOperator {
-    }
-
-    public record Negate() implements IR.UnaryOperator {
-    }
-
     public record Constant(int v) implements IR.Val {
     }
 
@@ -57,18 +51,17 @@ public class IRType {
 
     }
 
-    public record Add() implements IR.BinaryOperator {
+    public enum UnaryOp implements IR.UnaryOperator {
+        Complement,
+        Negate
     }
 
-    public record Subtract() implements IR.BinaryOperator {
+    public enum BinaryOp implements IR.BinaryOperator {
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Remainder
     }
 
-    public record Multiply() implements IR.BinaryOperator {
-    }
-
-    public record Divide() implements IR.BinaryOperator {
-    }
-
-    public record Remainder() implements IR.BinaryOperator {
-    }
 }

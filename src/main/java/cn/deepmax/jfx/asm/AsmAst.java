@@ -40,7 +40,7 @@ public class AsmAst {
         for (IR.Instruction ir : body) {
             switch (ir) {
                 case IRType.Return ret -> {
-                    list.addAll(Asm.Mov.makeMove(transOperand(ret.value()), new Asm.Register(new Asm.AX())));
+                    list.addAll(Asm.Mov.makeMove(transOperand(ret.value()), Asm.Register.AX));
                     list.add(new Asm.Ret());
                 }
                 case IRType.Unary s -> {
@@ -49,17 +49,17 @@ public class AsmAst {
                 }
                 case IRType.Binary b -> {
                     IR.BinaryOperator op = b.op();
-                    if (op instanceof IRType.Divide) {
-                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), new Asm.Register(new Asm.AX())));
+                    if (op == IRType.BinaryOp.Divide) {
+                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), Asm.Register.AX));
                         list.add(new Asm.Cdq());
                         list.addAll(Asm.Idiv.make(transOperand(b.src2())));
-                        list.addAll(Asm.Mov.makeMove(new Asm.Register(new Asm.AX()), transOperand(b.dst())));
-                    } else if (op instanceof IRType.Remainder) {
-                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), new Asm.Register(new Asm.AX())));
+                        list.addAll(Asm.Mov.makeMove(Asm.Register.AX, transOperand(b.dst())));
+                    } else if (op == IRType.BinaryOp.Remainder) {
+                        list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), Asm.Register.AX));
                         list.add(new Asm.Cdq());
                         list.addAll(Asm.Idiv.make(transOperand(b.src2())));
-                        list.addAll(Asm.Mov.makeMove(new Asm.Register(new Asm.DX()), transOperand(b.dst())));
-                    } else if (op instanceof IRType.Add || op instanceof IRType.Subtract || op instanceof IRType.Multiply) {
+                        list.addAll(Asm.Mov.makeMove(Asm.Register.AX, transOperand(b.dst())));
+                    } else if (op == IRType.BinaryOp.Add || op == IRType.BinaryOp.Subtract || op == IRType.BinaryOp.Multiply) {
                         list.addAll(Asm.Mov.makeMove(transOperand(b.src1()), transOperand(b.dst())));
                         list.addAll(Asm.Binary.make(
                                         convertBinaryOp(op),
@@ -80,17 +80,17 @@ public class AsmAst {
 
     private AssemblyConstruct.BinaryOperator convertBinaryOp(IR.BinaryOperator op) {
         return switch (op) {
-            case IRType.Add a -> new Asm.AddOp();
-            case IRType.Subtract a -> new Asm.SubOp();
-            case IRType.Multiply a -> new Asm.MultOp();
+            case IRType.BinaryOp.Add -> Asm.BinaryOp.Add;
+            case IRType.BinaryOp.Subtract -> Asm.BinaryOp.Sub;
+            case IRType.BinaryOp.Multiply -> Asm.BinaryOp.Mult;
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
 
     private AssemblyConstruct.UnaryOperator convertUnaryOp(IR.UnaryOperator op) {
         return switch (op) {
-            case IRType.Complement _i -> new Asm.Not();
-            case IRType.Negate _i -> new Asm.Neg();
+            case IRType.UnaryOp.Complement -> Asm.UnaryOp.Not;
+            case IRType.UnaryOp.Negate -> Asm.UnaryOp.Neg;
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }

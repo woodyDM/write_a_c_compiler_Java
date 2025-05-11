@@ -13,7 +13,6 @@ public class Asm {
     public record Function(String name,
                            List<AssemblyConstruct.Instruction> instructions)
             implements AssemblyConstruct.FunctionDef {
-
     }
 
     public record Unary(AssemblyConstruct.UnaryOperator op,
@@ -28,16 +27,16 @@ public class Asm {
                                                                AssemblyConstruct.Operand operand,
                                                                AssemblyConstruct.Operand dst) {
             List<AssemblyConstruct.Instruction> result = new ArrayList<>();
-            if (op instanceof AddOp || op instanceof SubOp) {
+            if (op == BinaryOp.Add || op == BinaryOp.Sub) {
                 if (operand instanceof Stack && dst instanceof Stack) {
-                    result.addAll(Mov.makeMove(operand, new Register(new R10D())));
-                    result.add(new Binary(op, new Register(new R10D()), dst));
+                    result.addAll(Mov.makeMove(operand, Register.R10D));
+                    result.add(new Binary(op, Register.R10D, dst));
                 } else {
                     result.add(new Binary(op, operand, dst));
                 }
-            } else if (op instanceof MultOp) {
+            } else if (op == BinaryOp.Mult) {
                 if (dst instanceof Stack) {
-                    Register tempRegister = new Register(new R11D());
+                    Register tempRegister = Register.R11D;
                     result.addAll(Mov.makeMove(dst, tempRegister));
                     result.add(new Binary(op, operand, tempRegister));
                     result.addAll(Mov.makeMove(tempRegister, dst));
@@ -58,9 +57,9 @@ public class Asm {
                 return List.of(
                         new Mov(
                                 operand,
-                                new Register(new R10D())
+                                Register.R10D
                         ),
-                        new Idiv(new Register(new R10D()))
+                        new Idiv(Register.R10D)
                 );
             } else {
                 return List.of(new Idiv(operand));
@@ -73,7 +72,6 @@ public class Asm {
 
 
     public record Ret() implements AssemblyConstruct.Instruction {
-
     }
 
     public record Mov(AssemblyConstruct.Operand src,
@@ -89,8 +87,8 @@ public class Asm {
                                            BiFunction<AssemblyConstruct.Operand, AssemblyConstruct.Operand, T> construct) {
         if (src instanceof Stack && dest instanceof Stack) {
             return List.of(
-                    construct.apply(src, Register.R10D()),
-                    construct.apply(Register.R10D(), dest)
+                    construct.apply(src, Register.R10D),
+                    construct.apply(Register.R10D, dest)
             );
         } else {
             return List.of(construct.apply(src, dest));
@@ -99,53 +97,41 @@ public class Asm {
     }
 
     public record AllocateStack(int size) implements AssemblyConstruct.Instruction {
-
     }
 
-    public record Neg() implements AssemblyConstruct.UnaryOperator {
+    public enum UnaryOp implements AssemblyConstruct.UnaryOperator{
+        Neg,
+        Not
     }
 
-    public record Not() implements AssemblyConstruct.UnaryOperator {
+    public enum Registers implements AssemblyConstruct.Reg {
+        AX,
+        R10D,
+        DX,
+        R11D
     }
 
-    public record AX() implements AssemblyConstruct.Reg {
-    }
-
-    public record R10D() implements AssemblyConstruct.Reg {
-    }
-
-    public record DX() implements AssemblyConstruct.Reg {
-    }
-
-    public record R11D() implements AssemblyConstruct.Reg {
-    }
-
-    public record AddOp() implements AssemblyConstruct.BinaryOperator {
-
-    }
-
-    public record SubOp() implements AssemblyConstruct.BinaryOperator {
-    }
-
-    public record MultOp() implements AssemblyConstruct.BinaryOperator {
+    public enum BinaryOp implements AssemblyConstruct.BinaryOperator {
+        Add,
+        Sub,
+        Mult,
     }
 
     public record Stack(int pos) implements AssemblyConstruct.Operand {
     }
 
     public record Pseudo(String id) implements AssemblyConstruct.Operand {
-
     }
 
     public record Imm(int v) implements AssemblyConstruct.Operand {
-
     }
 
     public record Register(AssemblyConstruct.Reg reg) implements AssemblyConstruct.Operand {
+        public static final Register R10D = new Register(Registers.R10D);
+        public static final Register R11D = new Register(Registers.R11D);
+        public static final Register AX = new Register(Registers.AX);
+        public static final Register DX = new Register(Registers.DX);
 
-        public static Register R10D() {
-            return new Register(new R10D());
-        }
     }
 
 
