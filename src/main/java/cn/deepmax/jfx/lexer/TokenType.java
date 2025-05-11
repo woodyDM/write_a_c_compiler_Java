@@ -12,7 +12,7 @@ public enum TokenType implements Token {
     SEMICOLON(";"),
 
     BITWISE("~"),
-    NEG("-", 45),
+    NEG("-", 45), //MINUS
     DECREMENT("--"),
 
     PLUS("+", 45),
@@ -22,14 +22,14 @@ public enum TokenType implements Token {
 
     //logic op
     NOT("!"),
-    AND("&&"),
-    OR("||"),
-    EQUAL_TO("=="),
-    NOT_EQUAL_TO("!="),
-    LESS_THAN("<"),
-    GREATER_THAN(">"),
-    LESS_THAN_OR_EQ("<="),
-    GREATER_THAN_OR_EQ(">="),
+    AND("&&", 10),
+    OR("||", 5),
+    EQUAL_TO("==", 30),
+    NOT_EQUAL_TO("!=", 30),
+    LESS_THAN("<", 35),
+    GREATER_THAN(">", 35),
+    LESS_THAN_OR_EQ("<=", 35),
+    GREATER_THAN_OR_EQ(">=", 35),
 
     SHARP("#"),
     EOF,
@@ -59,7 +59,9 @@ public enum TokenType implements Token {
     }
 
     public boolean isBinaryOp() {
-        return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG;
+        return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG ||
+                this == LESS_THAN || this == LESS_THAN_OR_EQ || this == GREATER_THAN || this == GREATER_THAN_OR_EQ ||
+                this == EQUAL_TO || this == NOT_EQUAL_TO || this == AND || this == OR;
     }
 
 

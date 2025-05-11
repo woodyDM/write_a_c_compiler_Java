@@ -59,7 +59,7 @@ public class Parser {
                 String v = token.params().toString();
                 yield new Ast.IntConstantFactor(Integer.parseInt(v));
             }
-            case BITWISE, NEG -> {
+            case BITWISE, NEG, NOT -> {
                 AstNode.UnaryOperator op = parseOp(token);
                 var innerFact = parseFactor();
                 yield new Ast.Unary(op, innerFact);
@@ -94,6 +94,16 @@ public class Parser {
             case TokenType.MULTIP -> Ast.BinaryOp.Multiply;
             case TokenType.DIV -> Ast.BinaryOp.Divide;
             case TokenType.REMINDER -> Ast.BinaryOp.Remainder;
+
+            case TokenType.AND -> Ast.BinaryOp.And;
+            case TokenType.OR -> Ast.BinaryOp.Or;
+            case TokenType.EQUAL_TO -> Ast.BinaryOp.Equal;
+            case TokenType.NOT_EQUAL_TO -> Ast.BinaryOp.NotEqual;
+            case TokenType.LESS_THAN -> Ast.BinaryOp.LessThan;
+            case TokenType.LESS_THAN_OR_EQ -> Ast.BinaryOp.LessOrEqual;
+            case TokenType.GREATER_THAN -> Ast.BinaryOp.GreaterThan;
+            case TokenType.GREATER_THAN_OR_EQ -> Ast.BinaryOp.GreaterOrEqual;
+
             default -> throw new UnsupportedOperationException("invalid token " + token.toString());
         };
     }
@@ -102,7 +112,8 @@ public class Parser {
     private AstNode.UnaryOperator parseOp(Token token) {
         return switch (token.type()) {
             case BITWISE -> Ast.UnaryOp.Complement;
-            case NEG -> Ast.UnaryOp.Not;
+            case NEG -> Ast.UnaryOp.Negate;
+            case NOT -> Ast.UnaryOp.Not;
             default -> throw new UnsupportedOperationException(token.toString());
         };
     }

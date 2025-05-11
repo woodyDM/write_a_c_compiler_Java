@@ -48,7 +48,16 @@ public class Ast {
         Subtract,
         Multiply,
         Divide,
-        Remainder
+        Remainder,
+        //logic
+        And,
+        Or,
+        Equal,
+        NotEqual,
+        LessThan,
+        LessOrEqual,
+        GreaterThan,
+        GreaterOrEqual
     }
 
 }
