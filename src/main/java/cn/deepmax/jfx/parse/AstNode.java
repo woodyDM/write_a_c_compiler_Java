@@ -8,7 +8,14 @@ public interface AstNode {
     interface FunctionDef {
     }
 
+    interface BlockItem {
+
+    }
+
     interface Statement {
+    }
+
+    interface Declaration {
     }
 
     interface Exp {

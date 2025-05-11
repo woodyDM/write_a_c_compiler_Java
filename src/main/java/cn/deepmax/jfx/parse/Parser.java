@@ -2,6 +2,7 @@ package cn.deepmax.jfx.parse;
 
 import cn.deepmax.jfx.lexer.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,16 +39,60 @@ public class Parser {
         expect(TokenType.KEYWORD, new StringTokenParam("void"));
         expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
         expect(TokenType.OPEN_BRACE, NoneParams.NONE);
-        AstNode.Statement stmt = parseStatement();
+
+        List<AstNode.BlockItem> fnBody = new ArrayList<>();
+        parseFunctionBody(fnBody);
         expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
 
-        return new Ast.FunctionDefinition(idName, stmt);
+        return new Ast.FunctionDefinition(idName, fnBody);
+    }
+
+    private void parseFunctionBody(List<AstNode.BlockItem> list) {
+        while (getNextToken() != TokenType.CLOSE_BRACE) {
+            AstNode.BlockItem nextItem = parseBlockItem();
+            list.add(nextItem);
+        }
+    }
+
+    //blockItem ::= <statement>|<declaration>
+    private AstNode.BlockItem parseBlockItem() {
+        Token nextToken = getNextToken();
+        if (nextToken.type() == TokenType.KEYWORD) {
+            Tokens.Keyword kw = (Tokens.Keyword) nextToken;
+            if (kw.params().toString().equals("int")) {
+                //declaration
+                moveNext();
+                Token id = expect(TokenType.ID, null);
+                AstNode.Exp init = null;
+                if (getNextToken() == TokenType.ASSIGNMENT) {
+                    //init
+                    moveNext();
+                    init = parseExp(0);
+                }
+                expect(TokenType.SEMICOLON, NoneParams.NONE);
+                return new Ast.DeclareBlockItem(new Ast.Declare(id.params().toString(), init));
+            }
+        }
+        var stmt = parseStatement();
+        return new Ast.StatementBlockItem(stmt);
     }
 
     public AstNode.Statement parseStatement() {
-        expect(TokenType.KEYWORD, new StringTokenParam("return"));
+        var nextToken = getNextToken();
+        if (nextToken == TokenType.SEMICOLON) {
+            moveNext();
+            return new Ast.Null();
+        }
+        if (nextToken instanceof Tokens.Keyword kw && "return".equals(kw.params().toString())) {
+            expect(TokenType.KEYWORD, new StringTokenParam("return"));
+            AstNode.Exp node = parseExp(0);
+            Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
+            expect(TokenType.SEMICOLON, NoneParams.NONE);
+            return statement;
+        }
+        //normal exp
         AstNode.Exp node = parseExp(0);
-        Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
+        Ast.Expression statement = new Ast.Expression(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
     }
@@ -69,6 +114,11 @@ public class Parser {
                 expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
                 yield new Ast.ExpFactor(inner);
             }
+            case ID -> {
+                Tokens.Id id = (Tokens.Id) token;
+                Ast.Var exp = new Ast.Var(id.params().toString());
+                yield new Ast.ExpFactor(exp);
+            }
             default -> throw new UnsupportedOperationException("Malformed factor:" + token.toString());
         };
     }
@@ -78,10 +128,16 @@ public class Parser {
         Token nextToken = getNextToken();
         while (nextToken.type().isBinaryOp() && nextToken.type().prec() >= minPrec) {
             moveNext();
-            var op = parseBinop(nextToken);
-
-            AstNode.Exp right = parseExp(nextToken.type().prec() + 1);
-            left = new Ast.Binary(op, left, right);
+            if (nextToken == TokenType.ASSIGNMENT) {
+                //right-associative
+                var right = parseExp(nextToken.type().prec());
+                left = new Ast.Assignment(left, right);
+            } else {
+                //left-associative
+                var op = parseBinop(nextToken);
+                AstNode.Exp right = parseExp(nextToken.type().prec() + 1);
+                left = new Ast.Binary(op, left, right);
+            }
             nextToken = getNextToken();
         }
         return left;

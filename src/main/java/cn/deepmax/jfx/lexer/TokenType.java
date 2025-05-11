@@ -31,7 +31,7 @@ public enum TokenType implements Token {
     LESS_THAN_OR_EQ("<=", 35),
     GREATER_THAN_OR_EQ(">=", 35),
 
-    ASSIGNMENT("="),
+    ASSIGNMENT("=", 1),
 
     SHARP("#"),
     EOF,
@@ -63,7 +63,8 @@ public enum TokenType implements Token {
     public boolean isBinaryOp() {
         return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG ||
                 this == LESS_THAN || this == LESS_THAN_OR_EQ || this == GREATER_THAN || this == GREATER_THAN_OR_EQ ||
-                this == EQUAL_TO || this == NOT_EQUAL_TO || this == AND || this == OR;
+                this == EQUAL_TO || this == NOT_EQUAL_TO || this == AND || this == OR ||
+                this == ASSIGNMENT;
     }
 
 

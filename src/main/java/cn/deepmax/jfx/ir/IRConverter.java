@@ -20,7 +20,8 @@ public class IRConverter {
 
     private IR.FunctionDef convertFn() {
         var fn = ((Ast.AstProgram) program).functionDefinition();
-        return new IRType.FunctionDef(fn.name(), convertIns(fn.body()));
+//        return new IRType.FunctionDef(fn.name(), convertIns(fn.body()));
+        return null;
     }
 
     private List<IR.Instruction> convertIns(AstNode.Statement statement) {

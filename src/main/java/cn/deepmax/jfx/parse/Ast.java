@@ -1,5 +1,8 @@
 package cn.deepmax.jfx.parse;
 
+import java.util.List;
+
+
 public class Ast {
 
 
@@ -7,8 +10,24 @@ public class Ast {
 
     }
 
-    public record FunctionDefinition(String name, AstNode.Statement body)
+    public record FunctionDefinition(String name, List<AstNode.BlockItem> body)
             implements AstNode.FunctionDef {
+
+    }
+
+    public record StatementBlockItem(AstNode.Statement statement) implements AstNode.BlockItem {
+    }
+
+    public record DeclareBlockItem(AstNode.Declaration statement) implements AstNode.BlockItem {
+    }
+
+    public record Expression(AstNode.Exp exp) implements AstNode.Statement {
+    }
+
+    public record Null() implements AstNode.Statement {
+    }
+
+    public record Declare(String identifier, AstNode.Exp exp) implements AstNode.Declaration {
 
     }
 
@@ -35,6 +54,12 @@ public class Ast {
     public record Binary(AstNode.BinaryOperator operator, AstNode.Exp left, AstNode.Exp right)
             implements AstNode.Exp {
 
+    }
+
+    public record Var(String identifier) implements AstNode.Exp {
+    }
+
+    public record Assignment(AstNode.Exp left, AstNode.Exp right) implements AstNode.Exp {
     }
 
     public enum UnaryOp implements AstNode.UnaryOperator {

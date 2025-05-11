@@ -21,7 +21,9 @@ public class App {
             """
                    int   main   \t\t\r  \n
                     (  void ) {
-                        return 2+3 * 7 +(1==2||2!=3);    \t\t
+                        int a;
+                        a=5+3+1;
+                        return a+3;    \t\t
                         \n
                     }
                     """;

@@ -17,7 +17,6 @@ public class Tokens {
     }
 
     public static class Keyword extends StringBase {
-
         public Keyword(String value) {
             super(TokenType.KEYWORD, value);
         }
