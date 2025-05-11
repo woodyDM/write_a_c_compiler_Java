@@ -31,6 +31,8 @@ public enum TokenType implements Token {
     LESS_THAN_OR_EQ("<=", 35),
     GREATER_THAN_OR_EQ(">=", 35),
 
+    ASSIGNMENT("="),
+
     SHARP("#"),
     EOF,
     ;

@@ -68,7 +68,7 @@ public class Lexer {
                 case '&' -> parseNextTwo('&', null, TokenType.AND);
                 case '!' -> parseNextTwo('=', TokenType.NOT, TokenType.NOT_EQUAL_TO);
                 case '|' -> parseNextTwo('|', null, TokenType.OR);
-                case '=' -> parseNextTwo('=', null, TokenType.EQUAL_TO);
+                case '=' -> parseNextTwo('=', TokenType.ASSIGNMENT, TokenType.EQUAL_TO);
                 case '<' -> parseNextTwo('=', TokenType.LESS_THAN, TokenType.LESS_THAN_OR_EQ);
                 case '>' -> parseNextTwo('=', TokenType.GREATER_THAN, TokenType.GREATER_THAN_OR_EQ);
 
