@@ -22,8 +22,11 @@ public class App {
                    int   main   \t\t\r  \n
                     (  void ) {
                         int a;
+                        
                         a=5+3+1;
-                        return a+3;    \t\t
+                        int b = a+3;
+                        int c=b+5+(a+b);
+                        return a+b;    \t\t
                         \n
                     }
                     """;

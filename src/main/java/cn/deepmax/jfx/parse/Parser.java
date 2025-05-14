@@ -2,9 +2,7 @@ package cn.deepmax.jfx.parse;
 
 import cn.deepmax.jfx.lexer.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * 主要是 recursive dscent parsing 解析
@@ -15,6 +13,7 @@ public class Parser {
     public final List<Token> tokenList;
     private int pos = 0;
     private final int len;
+    private Variables variables = new Variables();
 
     public Parser(Lexer lexer) {
         this.tokenList = lexer.tokenList();
@@ -70,11 +69,28 @@ public class Parser {
                     init = parseExp(0);
                 }
                 expect(TokenType.SEMICOLON, NoneParams.NONE);
-                return new Ast.DeclareBlockItem(new Ast.Declare(id.params().toString(), init));
+                AstNode.Declaration declare = new Ast.Declare(id.params().toString(), init);
+                declare = resolveDeclaration(declare);
+                return new Ast.DeclareBlockItem(declare);
             }
         }
-        var stmt = parseStatement();
+        AstNode.Statement statement = parseStatement();
+        var stmt = resolveStatement(statement);
         return new Ast.StatementBlockItem(stmt);
+    }
+
+    private AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
+        if (declaration instanceof Ast.Declare d) {
+            var idValue = d.identifier();
+            boolean exist = variables.exist(idValue);
+            if (exist) {
+                throw new ParseException("Duplicate variable declaration! id =  " + idValue);
+            }
+            String replacedName = idValue + Variables.nextId();
+            variables.put(idValue, replacedName);
+            return new Ast.Declare(replacedName, resolveExp(d.exp()));
+        }
+        throw new UnsupportedOperationException(declaration.toString());
     }
 
     public AstNode.Statement parseStatement() {
@@ -95,6 +111,15 @@ public class Parser {
         Ast.Expression statement = new Ast.Expression(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
+    }
+
+    private AstNode.Statement resolveStatement(AstNode.Statement statement) {
+        return switch (statement) {
+            case Ast.ReturnStatement r -> new Ast.ReturnStatement(resolveExp(r.exp()));
+            case Ast.Expression e -> new Ast.Expression(resolveExp(e.exp()));
+            case Ast.Null n -> n;
+            default -> throw new UnsupportedOperationException(statement.toString());
+        };
     }
 
     public AstNode.Factor parseFactor() {
@@ -124,7 +149,8 @@ public class Parser {
     }
 
     public AstNode.Exp parseExp(int minPrec) {
-        AstNode.Exp left = new Ast.FactorExp(parseFactor());
+        AstNode.Factor factor = parseFactor();
+        AstNode.Exp left = factor instanceof Ast.ExpFactor(AstNode.Exp exp) ? exp : new Ast.FactorExp(factor);
         Token nextToken = getNextToken();
         while (nextToken.type().isBinaryOp() && nextToken.type().prec() >= minPrec) {
             moveNext();
@@ -141,6 +167,44 @@ public class Parser {
             nextToken = getNextToken();
         }
         return left;
+    }
+
+    private AstNode.Factor resolveFactor(AstNode.Factor factor) {
+        return switch (factor) {
+            case Ast.ExpFactor e -> new Ast.ExpFactor(resolveExp(e.exp()));
+            case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(factor));
+            case Ast.IntConstantFactor f -> f;
+            default -> throw new UnsupportedOperationException(factor.toString());
+        };
+    }
+
+    private AstNode.Exp resolveExp(AstNode.Exp exp) {
+        return switch (exp) {
+            case null -> null; //for declare
+            case Ast.Assignment it -> {
+                if (it.left() instanceof Ast.Var v) {
+                    yield new Ast.Assignment(resolveExp(v), resolveExp(it.right()));
+                } else {
+                    throw new ParseException("Invalid lvalue [%s]", it.left().toString());
+                }
+            }
+            case Ast.Var v -> {
+                String rawId = v.identifier();
+                String existReplacement = variables.get(rawId);
+                if (existReplacement != null) {
+                    yield new Ast.Var(existReplacement);
+                } else {
+                    throw new ParseException("Undeclared variable [%s]", rawId);
+                }
+            }
+            case Ast.Binary b -> {
+                yield new Ast.Binary(b.operator(), resolveExp(b.left()), resolveExp(b.right()));
+            }
+            case Ast.FactorExp f -> {
+                yield new Ast.FactorExp(resolveFactor(f.factor()));
+            }
+            default -> throw new UnsupportedOperationException(exp.toString());
+        };
     }
 
     private AstNode.BinaryOperator parseBinop(Token token) {

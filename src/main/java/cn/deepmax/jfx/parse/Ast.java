@@ -85,4 +85,12 @@ public class Ast {
         GreaterOrEqual
     }
 
+    public static AstNode.Exp unwrap(AstNode.Exp exp) {
+        if (exp instanceof FactorExp(AstNode.Factor factor)) {
+            if (factor instanceof ExpFactor(AstNode.Exp exp1)) {
+                return exp1;
+            }
+        }
+        return exp;
+    }
 }
