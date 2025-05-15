@@ -1,4 +1,4 @@
-// Test that we can properly lex identifiers that start with keywords
+ 
 
 int main(void) {
     int return_val = 3;

@@ -260,7 +260,7 @@ class TestChapter(unittest.TestCase):
         if cc_opt is None and self.exit_stage is not None:
             cc_opt = f"--{self.exit_stage}"
 
-        jvmOpt=  ['-jar','-Dtest=1','/root/WriteCC/target/WriteCC-1.0-SNAPSHOT-jar-with-dependencies.jar']
+        jvmOpt=  ['-jar','-Dtest=1','../target/WriteCC-1.0-SNAPSHOT-jar-with-dependencies.jar']
         args = [self.cc] +jvmOpt + self.options
          
         if cc_opt is not None:

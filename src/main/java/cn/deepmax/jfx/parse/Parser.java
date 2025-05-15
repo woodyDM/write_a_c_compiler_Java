@@ -172,7 +172,7 @@ public class Parser {
     private AstNode.Factor resolveFactor(AstNode.Factor factor) {
         return switch (factor) {
             case Ast.ExpFactor e -> new Ast.ExpFactor(resolveExp(e.exp()));
-            case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(factor));
+            case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(u.factor()));
             case Ast.IntConstantFactor f -> f;
             default -> throw new UnsupportedOperationException(factor.toString());
         };

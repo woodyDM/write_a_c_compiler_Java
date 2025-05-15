@@ -61,3 +61,6 @@ cd writing-a-c-compiler-tests
 Two things have changed since the initial early access version of the book:
 1. The chapter numbers have decreased by 1 (e.g. Chapter 2 in the EA version is now Chapter 1).
 2. We now use `int main(void)` instead of `int main()` to declare a function with no parameters. You'll need to define a `void` token in the lexer and include it in the grammar rule for function definitions.
+
+# Note for Java
+./test_compiler /usr/bin/java --chapter x
