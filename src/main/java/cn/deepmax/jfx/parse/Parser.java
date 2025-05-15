@@ -86,7 +86,7 @@ public class Parser {
             if (exist) {
                 throw new ParseException("Duplicate variable declaration! id =  " + idValue);
             }
-            String replacedName = idValue + Variables.nextId();
+            String replacedName = idValue + "." + Variables.nextId();
             variables.put(idValue, replacedName);
             return new Ast.Declare(replacedName, resolveExp(d.exp()));
         }

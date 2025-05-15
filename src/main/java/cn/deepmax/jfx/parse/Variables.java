@@ -14,6 +14,10 @@ public class Variables {
         return variables.containsKey(rawId);
     }
 
+    public static int currentNumber() {
+        return (int) seq.get();
+    }
+
     public String get(String rawId) {
         return variables.get(rawId);
     }

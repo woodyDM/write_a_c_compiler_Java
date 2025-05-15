@@ -1,5 +1,6 @@
 package cn.deepmax.jfx.ir;
 
+import cn.deepmax.jfx.exception.SemanticException;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.AstNode;
 
@@ -20,23 +21,55 @@ public class IRConverter {
 
     private IR.FunctionDef convertFn() {
         var fn = ((Ast.AstProgram) program).functionDefinition();
-//        return new IRType.FunctionDef(fn.name(), convertIns(fn.body()));
-        return null;
+        return new IRType.FunctionDef(fn.name(), convertIns(fn.body()));
     }
 
-    private List<IR.Instruction> convertIns(AstNode.Statement statement) {
+    private List<IR.Instruction> convertIns(List<AstNode.BlockItem> itemList) {
         List<IR.Instruction> list = new ArrayList<>();
-        switch (statement) {
-            case Ast.ReturnStatement rs -> {
-                AstNode.Exp exp = rs.exp();
-                IRType.Return rt = new IRType.Return(convertValue(exp, list));
-                list.add(rt);
+        for (AstNode.BlockItem blockItem : itemList) {
+            switch (blockItem) {
+                case Ast.DeclareBlockItem d -> {
+                    Ast.Declare statement = (Ast.Declare) d.statement();
+                    if (statement.exp() == null) {
+                        //no init ,so no tacky
+                        break;
+                    }
+                    var result = convertValue(statement.exp(), list);
+                    IRType.Var v = new IRType.Var(statement.identifier());
+                    list.add(new IRType.Copy(result, v));
+                }
+                case Ast.StatementBlockItem stmt -> {
+                    switch (stmt.statement()) {
+                        case Ast.ReturnStatement rs -> {
+                            AstNode.Exp exp = rs.exp();
+                            IRType.Return rt = new IRType.Return(convertValue(exp, list));
+                            list.add(rt);
+                        }
+                        case Ast.Expression exp -> {
+                            var _result = convertValue(exp.exp(), list);
+                            //emit the result
+                        }
+                        case Ast.Null n -> {
+                            //no instructions
+                        }
+                        default -> throw new UnsupportedOperationException(itemList.toString());
+                    }
+                }
+                default -> throw new UnsupportedOperationException("invalid block item " + blockItem);
             }
-            default -> throw new UnsupportedOperationException(statement.toString());
         }
+        //always return 0
+        list.add(new IRType.Return(new IRType.Constant(0)));
         return list;
     }
 
+    /**
+     * emit_tacky
+     *
+     * @param exp
+     * @param list
+     * @return
+     */
     private IR.Val convertValue(AstNode.Exp exp, List<IR.Instruction> list) {
         return switch (exp) {
             case Ast.FactorExp f -> switch (f.factor()) {
@@ -96,7 +129,17 @@ public class IRConverter {
                     list.add(new IRType.Binary(op, v1, v2, dst));
                     yield dst;
                 }
-
+            }
+            case Ast.Var v -> new IRType.Var(v.identifier());
+            case Ast.Assignment ag -> {
+                var result = convertValue(ag.right(), list);
+                if (ag.left() instanceof Ast.Var v) {
+                    IRType.Var dst = new IRType.Var(v.identifier());
+                    list.add(new IRType.Copy(result, dst));
+                    yield dst;
+                } else {
+                    throw new SemanticException("assignment left only support Var");
+                }
             }
             default -> throw new UnsupportedOperationException(exp.toString());
         };

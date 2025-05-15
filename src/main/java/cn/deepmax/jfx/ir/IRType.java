@@ -1,5 +1,7 @@
 package cn.deepmax.jfx.ir;
 
+import cn.deepmax.jfx.parse.Variables;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,25 +14,23 @@ public class IRType {
     }
 
     public record Var(String identifier) implements IR.Val {
-        public static AtomicInteger varId = new AtomicInteger(0);
-
         public static Var makeTemp() {
             String name = makeTempVarName();
             return new Var(name);
         }
 
         public int getStackOffset() {
-            if (identifier.startsWith("var.")) {
-                int idx = identifier.indexOf(".");
+            int idx = identifier.indexOf(".");
+            if (idx != -1) {
                 int id = Integer.parseInt(identifier.substring(idx + 1));
                 return id * 4;
             } else {
-                throw new UnsupportedOperationException("id not valid " + identifier);
+                throw new UnsupportedOperationException("identifier name not valid : " + identifier);
             }
         }
 
         private static String makeTempVarName() {
-            return "var." + varId.incrementAndGet();
+            return "var." + Variables.nextId();
         }
     }
 

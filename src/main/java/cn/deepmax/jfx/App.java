@@ -8,6 +8,7 @@ import cn.deepmax.jfx.ir.IRConverter;
 import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
+import cn.deepmax.jfx.parse.Variables;
 import cn.deepmax.jfx.utils.ProcessRunner;
 
 import java.io.IOException;
@@ -19,16 +20,17 @@ import java.nio.file.Paths;
 public class App {
     static String input =
             """
-                   int   main   \t\t\r  \n
-                    (  void ) {
-                        int a;
-                        
-                        a=5+3+1;
-                        int b = a+3;
-                        int c=b+5+(a+b);
-                        return a+b;    \t\t
-                        \n
-                    }
+                    int   main   \t\t\r  \n
+                     (  void ) {
+                         int a=3+4;
+                    
+                         a=5+3*2;  \s
+                          int b = 1+2*a;
+                          int c= b*2+(a+b);
+                          c=e+1;
+                          return c+b+a;  \s
+                         \n
+                     }
                     """;
 
 
@@ -64,7 +66,7 @@ public class App {
 
         IRConverter irConverter = new IRConverter(astProgram);
         IR.Program irProgram = irConverter.convertToIR();
-        if ("--tacky".equals(level)) return;
+        if ("--tacky".equals(level) || "--validate".equals(level)) return;
 
 
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
@@ -110,6 +112,7 @@ public class App {
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
         System.out.println("--------- asm ast ---------");
         System.out.println(asmAst);
+        System.out.printf("-----current variable id = [%d] -------\n", Variables.currentNumber());
 
         String asmCode = Emission.codegen(asmAst);
         System.out.println("---- asm -------");
