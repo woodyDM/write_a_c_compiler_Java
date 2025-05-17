@@ -11,6 +11,8 @@ public class Lexer {
     final String txt;
     private final int len;
     int pos = 0;
+    int lineNumber = 2;
+    boolean firstLine = true;
 
     public Lexer(String s) {
         txt = s;
@@ -44,8 +46,17 @@ public class Lexer {
     }
 
     public Token nextToken() {
+        if (firstLine) {
+            firstLine = false;
+            return new Tokens.NewLine(1);
+        }
         while (pos < len && isWhitespace(data[pos])) {
-            pos++;
+            if (isNewLine(data[pos])) {
+                pos++;
+                return new Tokens.NewLine(lineNumber++);
+            } else {
+                pos++;
+            }
         }
         if (pos >= len) return TokenType.EOF;
         byte cb = data[pos];
@@ -91,7 +102,7 @@ public class Lexer {
             }
         }
 
-        Set<String> KEYWORDS = Set.of("int", "void", "return");
+        Set<String> KEYWORDS = Set.of("int", "void", "return", "if", "else");
         if (KEYWORDS.contains(value)) {
             return new Tokens.Keyword(value);
         }
@@ -156,5 +167,9 @@ public class Lexer {
 
     static boolean isWhitespace(byte b) {
         return b == ' ' || b == '\t' || b == '\r' || b == '\n';
+    }
+
+    static boolean isNewLine(byte b) {
+        return b == '\n';
     }
 }

@@ -29,8 +29,10 @@ public class App {
                          a=5+3*2;  
                          int b = 1+2*a;
                          int c= b*2+(a+b);
-                         if(b<=c){
-                         return a+10;}else{return b>b?b+1:a;}
+                         if(b<=c)
+                         return a+10;
+                         else
+                         return k+1;
                     
                     
                     

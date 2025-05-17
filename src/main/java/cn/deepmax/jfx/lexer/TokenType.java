@@ -37,6 +37,8 @@ public enum TokenType implements Token {
     COLON(":"),
 
     SHARP("#"),
+
+    NEWLINE,
     EOF,
     ;
 

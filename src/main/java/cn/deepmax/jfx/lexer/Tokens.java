@@ -22,6 +22,29 @@ public class Tokens {
         }
     }
 
+    public static class NewLine implements Token {
+        public final int lineNumber;
+
+        public NewLine(int lineNumber) {
+            this.lineNumber = lineNumber;
+        }
+
+        @Override
+        public TokenType type() {
+            return TokenType.NEWLINE;
+        }
+
+        @Override
+        public TokenParams params() {
+            return new IntTokenParam(this.lineNumber);
+        }
+
+        @Override
+        public String toString() {
+            return "NewLine(" + lineNumber + ")";
+        }
+    }
+
     public static class StringBase implements Token {
         public final TokenType type;
         private final StringTokenParam value;

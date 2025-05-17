@@ -3,6 +3,7 @@ package cn.deepmax.jfx.parse;
 import cn.deepmax.jfx.lexer.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 主要是 recursive dscent parsing 解析
@@ -11,9 +12,10 @@ import java.util.*;
  */
 public class Parser {
     public final List<Token> tokenList;
-    private int pos = 0;
+    int pos = 0;
     private final int len;
     private Variables variables = new Variables();
+    private Token currentLine;
 
     public Parser(Lexer lexer) {
         this.tokenList = lexer.tokenList();
@@ -84,7 +86,7 @@ public class Parser {
             var idValue = d.identifier();
             boolean exist = variables.exist(idValue);
             if (exist) {
-                throw new ParseException("Duplicate variable declaration! id =  " + idValue);
+                throw new ParseException(this, "Duplicate variable declaration! id =  " + idValue);
             }
             String replacedName = idValue + "." + Variables.nextId();
             variables.put(idValue, replacedName);
@@ -99,12 +101,33 @@ public class Parser {
             moveNext();
             return new Ast.Null();
         }
-        if (nextToken instanceof Tokens.Keyword kw && "return".equals(kw.params().toString())) {
-            expect(TokenType.KEYWORD, new StringTokenParam("return"));
-            AstNode.Exp node = parseExp(0);
-            Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
-            expect(TokenType.SEMICOLON, NoneParams.NONE);
-            return statement;
+        if (nextToken instanceof Tokens.Keyword kw) {
+            String value = kw.params().toString();
+            switch (value) {
+                case "return" -> {
+                    expect(TokenType.KEYWORD, new StringTokenParam("return"));
+                    AstNode.Exp node = parseExp(0);
+                    Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
+                    expect(TokenType.SEMICOLON, NoneParams.NONE);
+                    return statement;
+                }
+                case "if" -> {
+                    moveNext();
+                    expect(TokenType.OPEN_PARENTHESIS);
+                    AstNode.Exp exp = parseExp(0);
+                    expect(TokenType.CLOSE_PARENTHESIS);
+                    var thenStmt = parseStatement();
+                    Token elseIf = getNextToken();
+                    AstNode.Statement elseSt;
+                    if (elseIf.isKeyword("else")) {
+                        moveNext();
+                        elseSt = parseStatement();
+                    } else {
+                        elseSt = null;
+                    }
+                    return new Ast.If(exp, thenStmt, elseSt);
+                }
+            }
         }
         //normal exp
         AstNode.Exp node = parseExp(0);
@@ -115,10 +138,14 @@ public class Parser {
 
     private AstNode.Statement resolveStatement(AstNode.Statement statement) {
         return switch (statement) {
+            case null -> null;
             case Ast.ReturnStatement r -> new Ast.ReturnStatement(resolveExp(r.exp()));
             case Ast.Expression e -> new Ast.Expression(resolveExp(e.exp()));
             case Ast.Null n -> n;
-            default -> throw new UnsupportedOperationException(statement.toString());
+            case Ast.If s -> new Ast.If(resolveExp(s.condition()),
+                    resolveStatement(s.then()),
+                    resolveStatement(s.elseSt()));
+            default -> throw new ParseException(this, "Unsupported " + statement.toString());
         };
     }
 
@@ -144,7 +171,7 @@ public class Parser {
                 Ast.Var exp = new Ast.Var(id.params().toString());
                 yield new Ast.ExpFactor(exp);
             }
-            default -> throw new UnsupportedOperationException("Malformed factor:" + token.toString());
+            default -> throw new ParseException(this, "Malformed factor:" + token.toString());
         };
     }
 
@@ -174,7 +201,7 @@ public class Parser {
             case Ast.ExpFactor e -> new Ast.ExpFactor(resolveExp(e.exp()));
             case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(u.factor()));
             case Ast.IntConstantFactor f -> f;
-            default -> throw new UnsupportedOperationException(factor.toString());
+            default -> throw new ParseException(this, "Unsupported " + factor);
         };
     }
 
@@ -185,7 +212,7 @@ public class Parser {
                 if (it.left() instanceof Ast.Var v) {
                     yield new Ast.Assignment(resolveExp(v), resolveExp(it.right()));
                 } else {
-                    throw new ParseException("Invalid lvalue [%s]", it.left().toString());
+                    throw new ParseException(this, "Invalid lvalue [%s]", it.left().toString());
                 }
             }
             case Ast.Var v -> {
@@ -194,7 +221,7 @@ public class Parser {
                 if (existReplacement != null) {
                     yield new Ast.Var(existReplacement);
                 } else {
-                    throw new ParseException("Undeclared variable [%s]", rawId);
+                    throw new ParseException(this, "Undeclared variable [%s]", rawId);
                 }
             }
             case Ast.Binary b -> {
@@ -238,6 +265,10 @@ public class Parser {
         };
     }
 
+    private Token expect(TokenType type) {
+        return this.expect(type, NoneParams.NONE);
+    }
+
     /**
      * @param type
      * @param tokenValue null for any
@@ -248,30 +279,61 @@ public class Parser {
                 = tokenValue == null ? "any value" : (Objects.equals(NoneParams.NONE, tokenValue) ? "" : tokenValue.toString());
         String msg = paramStr.isEmpty() ? "" : " with value " + paramStr;
         if (pos >= len) {
-            throw new ParseException("Expect %s%s,but get %s\n", type.name(), msg, "EOF");
+            throw new ParseException(this, "Expect %s%s,but get %s", type.name(), msg, "EOF");
         }
-        Token token = tokenList.get(pos++);
+        Token token = moveToNextToken();
         if (token == null) {
-            throw new ParseException("Expect %s%s,but get null\n", type.name(), msg);
+            throw new ParseException(this, "Expect %s%s,but get null", type.name(), msg);
         }
         if (token.type() == type && (tokenValue == null || Objects.equals(tokenValue, token.params()))) {
             return token;
         }
-        throw new ParseException("Expect %s%s,but get %s\n", type.name(), msg, token.toString());
+        throw new ParseException(this, "Expect %s%s,but get %s", type.name(), msg, token.toString());
     }
 
+    String reportCurrentPos() {
+        int end = Math.min(tokenList.size(), pos + 5);
+        var list = tokenList.subList(pos, end);
+        String tokens = list.stream().map(i -> i.toString()).collect(Collectors.joining(","));
+        return String.format("@Line[%s] near tokens:[%s]", currentLine.params().toString(), tokens);
+    }
+
+    /**
+     * move pointer pos to nextToken
+     *
+     * @return nextToken
+     */
     private Token moveToNextToken() {
-        var t = getNextToken();
-        moveNext();
-        return t;
+        pos++;
+        while (true) {
+            if (pos >= tokenList.size()) {
+                throw new IllegalStateException();
+            }
+            Token token = tokenList.get(pos);
+            if (token instanceof Tokens.NewLine) {
+                this.currentLine = token;
+                pos++;
+            } else {
+                return token;
+            }
+        }
     }
 
     private Token getNextToken() {
-        return tokenList.get(pos);
+        Token t;
+        int i = pos;
+        i++;
+        while ((t = tokenList.get(i)) instanceof Tokens.NewLine) {
+            i++;
+        }
+        return t;
     }
 
+    /**
+     * 跳过当前token
+     */
     private void moveNext() {
-        pos++;
+        moveToNextToken();
     }
 
 }

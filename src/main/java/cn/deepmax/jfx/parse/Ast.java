@@ -1,7 +1,8 @@
 package cn.deepmax.jfx.parse;
 
-import java.util.List;
+import cn.deepmax.jfx.utils.Nullable;
 
+import java.util.List;
 
 public class Ast {
 
@@ -21,13 +22,17 @@ public class Ast {
     public record DeclareBlockItem(AstNode.Declaration statement) implements AstNode.BlockItem {
     }
 
+    public record If(AstNode.Exp condition, AstNode.Statement then, @Nullable AstNode.Statement elseSt)
+            implements AstNode.Statement {
+    }
+
     public record Expression(AstNode.Exp exp) implements AstNode.Statement {
     }
 
     public record Null() implements AstNode.Statement {
     }
 
-    public record Declare(String identifier, AstNode.Exp exp) implements AstNode.Declaration {
+    public record Declare(String identifier, @Nullable AstNode.Exp exp) implements AstNode.Declaration {
 
     }
 
