@@ -72,6 +72,8 @@ public class Lexer {
                 case '<' -> parseNextTwo('=', TokenType.LESS_THAN, TokenType.LESS_THAN_OR_EQ);
                 case '>' -> parseNextTwo('=', TokenType.GREATER_THAN, TokenType.GREATER_THAN_OR_EQ);
 
+                case '?' -> TokenType.QUESTION;
+                case ':' -> TokenType.COLON;
                 default -> throw new LexerException(this, "invalid symbol " + cb);
             };
             pos++;
@@ -137,7 +139,7 @@ public class Lexer {
     }
 
     static boolean isSymbol(byte b) {
-        return b == '(' || b == ')' || b == '{' || b == '}' || b == ';';
+        return b == '(' || b == ')' || b == '{' || b == '}' || b == ';' || b == '?' || b == ':';
     }
 
     static boolean isDigit(byte b) {

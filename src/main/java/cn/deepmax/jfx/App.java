@@ -20,17 +20,21 @@ import java.nio.file.Paths;
 public class App {
     static String input =
             """
-                    int   main   \t\t\r  \n
-                     (  void ) {
-                         int a=3+4;
+                    int   main   		
                     
-                         a=5+3*2;  \s
-                          int b = 1+2*a;
-                          int c= b*2+(a+b);
-                          c=e+1;
-                          return c+b+a;  \s
-                         \n
-                     }
+                    
+                    (  void ) {
+                        int a=3+4;
+                    
+                         a=5+3*2;  
+                         int b = 1+2*a;
+                         int c= b*2+(a+b);
+                         if(b<=c){
+                         return a+10;}else{return b>b?b+1:a;}
+                    
+                    
+                    
+                    }
                     """;
 
 

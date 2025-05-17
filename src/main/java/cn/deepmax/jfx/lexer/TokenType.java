@@ -33,6 +33,9 @@ public enum TokenType implements Token {
 
     ASSIGNMENT("=", 1),
 
+    QUESTION("?"),
+    COLON(":"),
+
     SHARP("#"),
     EOF,
     ;
