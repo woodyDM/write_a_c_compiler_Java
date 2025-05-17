@@ -58,6 +58,9 @@ public class IRType {
 
     public record Label(String identifier) implements IR.Instruction {
         public static AtomicInteger id = new AtomicInteger(0);
+        public static int nextId(){
+            return id.getAndIncrement();
+        }
     }
 
 

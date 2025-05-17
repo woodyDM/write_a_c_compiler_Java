@@ -21,7 +21,8 @@ public class IRConverter {
 
     private IR.FunctionDef convertFn() {
         var fn = ((Ast.AstProgram) program).functionDefinition();
-        return new IRType.FunctionDef(fn.name(), convertIns(fn.body()));
+        List<IR.Instruction> instructions = convertIns(fn.body());
+        return new IRType.FunctionDef(fn.name(), instructions);
     }
 
     private List<IR.Instruction> convertIns(List<AstNode.BlockItem> itemList) {
@@ -39,21 +40,7 @@ public class IRConverter {
                     list.add(new IRType.Copy(result, v));
                 }
                 case Ast.StatementBlockItem stmt -> {
-                    switch (stmt.statement()) {
-                        case Ast.ReturnStatement rs -> {
-                            AstNode.Exp exp = rs.exp();
-                            IRType.Return rt = new IRType.Return(convertValue(exp, list));
-                            list.add(rt);
-                        }
-                        case Ast.Expression exp -> {
-                            var _result = convertValue(exp.exp(), list);
-                            //emit the result
-                        }
-                        case Ast.Null n -> {
-                            //no instructions
-                        }
-                        default -> throw new UnsupportedOperationException(itemList.toString());
-                    }
+                    convertStatement(stmt.statement(), list);
                 }
                 default -> throw new UnsupportedOperationException("invalid block item " + blockItem);
             }
@@ -61,6 +48,42 @@ public class IRConverter {
         //always return 0
         list.add(new IRType.Return(new IRType.Constant(0)));
         return list;
+    }
+
+    private void convertStatement(AstNode.Statement statement, List<IR.Instruction> list) {
+        switch (statement) {
+            case Ast.ReturnStatement rs -> {
+                AstNode.Exp exp = rs.exp();
+                IRType.Return rt = new IRType.Return(convertValue(exp, list));
+                list.add(rt);
+            }
+            case Ast.Expression exp -> {
+                var _result = convertValue(exp.exp(), list);
+                //emit the result
+            }
+            case Ast.Null n -> {
+                //no instructions
+            }
+            case Ast.If s -> {
+                String exitLabel = "if_exit_label." + IRType.Label.nextId();
+                if (s.elseSt() == null) {
+                    var condition = convertValue(s.condition(), list);
+                    list.add(new IRType.JumpIfZero(condition, exitLabel));
+                    convertStatement(s.then(), list);
+                    list.add(new IRType.Label(exitLabel));
+                } else {
+                    String elseLabel = "if_else_label." + IRType.Label.nextId();
+                    var condition = convertValue(s.condition(), list);
+                    list.add(new IRType.JumpIfZero(condition, elseLabel));
+                    convertStatement(s.then(), list);
+                    list.add(new IRType.Jump(exitLabel));
+                    list.add(new IRType.Label(elseLabel));
+                    convertStatement(s.elseSt(), list);
+                    list.add(new IRType.Label(exitLabel));
+                }
+            }
+            default -> throw new UnsupportedOperationException(statement.toString());
+        }
     }
 
     /**
@@ -88,8 +111,8 @@ public class IRConverter {
                 var bop = b.operator();
                 if (bop == Ast.BinaryOp.And) {
                     //should support short-circuit
-                    String falseLabel = "and_false_label." + IRType.Label.id.getAndIncrement();
-                    String exitLabel = "and_exit_label." + IRType.Label.id.getAndIncrement();
+                    String falseLabel = "and_false_label." + IRType.Label.nextId();
+                    String exitLabel = "and_exit_label." + IRType.Label.nextId();
                     var dst = IRType.Var.makeTemp();
 
                     var v1 = convertValue(b.left(), list);
@@ -105,8 +128,8 @@ public class IRConverter {
                     yield dst;
                 } else if (bop == Ast.BinaryOp.Or) {
                     //should support short-circuit
-                    String trueLabel = "or_true_label." + IRType.Label.id.getAndIncrement();
-                    String exitLabel = "or_exit_label." + IRType.Label.id.getAndIncrement();
+                    String trueLabel = "or_true_label." + IRType.Label.nextId();
+                    String exitLabel = "or_exit_label." + IRType.Label.nextId();
                     var dst = IRType.Var.makeTemp();
 
                     var v1 = convertValue(b.left(), list);
@@ -140,6 +163,25 @@ public class IRConverter {
                 } else {
                     throw new SemanticException("assignment left only support Var");
                 }
+            }
+            case Ast.Conditional c -> {
+                //should support short-circuit
+                String falseLabel = "conditional_false_label." + IRType.Label.nextId();
+                String exitLabel = "conditional_exit_label." + IRType.Label.nextId();
+                var dst = IRType.Var.makeTemp();
+
+                var condition = convertValue(c.condition(), list);
+                list.add(new IRType.JumpIfZero(condition, falseLabel));
+                var r = convertValue(c.trueExp(), list);
+                list.add(new IRType.Copy(r, dst));
+                list.add(new IRType.Jump(exitLabel));
+
+                list.add(new IRType.Label(falseLabel));
+                var rfalse = convertValue(c.falseExp(), list);
+                list.add(new IRType.Copy(rfalse, dst));
+                list.add(new IRType.Label(exitLabel));
+
+                yield dst;
             }
             default -> throw new UnsupportedOperationException(exp.toString());
         };
