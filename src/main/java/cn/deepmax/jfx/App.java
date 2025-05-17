@@ -32,7 +32,7 @@ public class App {
                          if(b<=c)
                          return a+10;
                          else
-                         return k+1;
+                         return a+1>50?b:c;
                     
                     
                     

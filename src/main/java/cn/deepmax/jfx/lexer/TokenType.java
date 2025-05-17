@@ -33,7 +33,7 @@ public enum TokenType implements Token {
 
     ASSIGNMENT("=", 1),
 
-    QUESTION("?"),
+    QUESTION("?", 3),
     COLON(":"),
 
     SHARP("#"),
@@ -69,7 +69,8 @@ public enum TokenType implements Token {
         return this == PLUS || this == MULTIP || this == DIV || this == REMINDER || this == NEG ||
                 this == LESS_THAN || this == LESS_THAN_OR_EQ || this == GREATER_THAN || this == GREATER_THAN_OR_EQ ||
                 this == EQUAL_TO || this == NOT_EQUAL_TO || this == AND || this == OR ||
-                this == ASSIGNMENT;
+                this == ASSIGNMENT ||
+                this == QUESTION;
     }
 
 

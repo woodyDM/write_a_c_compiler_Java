@@ -185,8 +185,12 @@ public class Parser {
                 //right-associative
                 var right = parseExp(nextToken.type().prec());
                 left = new Ast.Assignment(left, right);
+            } else if (nextToken == TokenType.QUESTION) {
+                var mid = parseConditionalExp();
+                var right = parseExp(nextToken.type().prec());
+                left = new Ast.Conditional(left, mid, right);
             } else {
-                //left-associative
+                //binary left-associative
                 var op = parseBinop(nextToken);
                 AstNode.Exp right = parseExp(nextToken.type().prec() + 1);
                 left = new Ast.Binary(op, left, right);
@@ -194,6 +198,17 @@ public class Parser {
             nextToken = getNextToken();
         }
         return left;
+    }
+
+    /**
+     * parse conditional exp
+     *
+     * @return
+     */
+    private AstNode.Exp parseConditionalExp() {
+        AstNode.Exp exp = parseExp(0);
+        expect(TokenType.COLON);
+        return exp;
     }
 
     private AstNode.Factor resolveFactor(AstNode.Factor factor) {
@@ -229,6 +244,11 @@ public class Parser {
             }
             case Ast.FactorExp f -> {
                 yield new Ast.FactorExp(resolveFactor(f.factor()));
+            }
+            case Ast.Conditional c -> {
+                yield new Ast.Conditional(resolveExp(c.condition()),
+                        resolveExp(c.trueExp()),
+                        resolveExp(c.falseExp()));
             }
             default -> throw new UnsupportedOperationException(exp.toString());
         };

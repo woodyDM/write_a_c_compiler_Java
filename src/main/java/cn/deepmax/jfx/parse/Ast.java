@@ -67,6 +67,11 @@ public class Ast {
     public record Assignment(AstNode.Exp left, AstNode.Exp right) implements AstNode.Exp {
     }
 
+    public record Conditional(AstNode.Exp condition, AstNode.Exp trueExp, AstNode.Exp falseExp)
+            implements AstNode.Exp {
+
+    }
+
     public enum UnaryOp implements AstNode.UnaryOperator {
         Complement,
         Negate,
