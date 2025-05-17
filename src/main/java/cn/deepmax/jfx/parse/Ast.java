@@ -11,7 +11,7 @@ public class Ast {
 
     }
 
-    public record FunctionDefinition(String name, List<AstNode.BlockItem> body)
+    public record FunctionDefinition(String name, Block body)
             implements AstNode.FunctionDef {
 
     }
@@ -30,6 +30,15 @@ public class Ast {
     }
 
     public record Null() implements AstNode.Statement {
+    }
+
+
+    public record Block(List<AstNode.BlockItem> blockItems) {
+
+    }
+
+    public record Compound(Block block) implements AstNode.Statement {
+
     }
 
     public record Declare(String identifier, @Nullable AstNode.Exp exp) implements AstNode.Declaration {

@@ -21,33 +21,37 @@ public class IRConverter {
 
     private IR.FunctionDef convertFn() {
         var fn = ((Ast.AstProgram) program).functionDefinition();
-        List<IR.Instruction> instructions = convertIns(fn.body());
+        List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
         return new IRType.FunctionDef(fn.name(), instructions);
     }
 
-    private List<IR.Instruction> convertIns(List<AstNode.BlockItem> itemList) {
+    private List<IR.Instruction> convertBlockItems(List<AstNode.BlockItem> itemList) {
         List<IR.Instruction> list = new ArrayList<>();
         for (AstNode.BlockItem blockItem : itemList) {
-            switch (blockItem) {
-                case Ast.DeclareBlockItem d -> {
-                    Ast.Declare statement = (Ast.Declare) d.statement();
-                    if (statement.exp() == null) {
-                        //no init ,so no tacky
-                        break;
-                    }
-                    var result = convertValue(statement.exp(), list);
-                    IRType.Var v = new IRType.Var(statement.identifier());
-                    list.add(new IRType.Copy(result, v));
-                }
-                case Ast.StatementBlockItem stmt -> {
-                    convertStatement(stmt.statement(), list);
-                }
-                default -> throw new UnsupportedOperationException("invalid block item " + blockItem);
-            }
+            convertBlockItem(blockItem, list);
         }
         //always return 0
         list.add(new IRType.Return(new IRType.Constant(0)));
         return list;
+    }
+
+    private void convertBlockItem(AstNode.BlockItem blockItem, List<IR.Instruction> list) {
+        switch (blockItem) {
+            case Ast.DeclareBlockItem d -> {
+                Ast.Declare statement = (Ast.Declare) d.statement();
+                if (statement.exp() == null) {
+                    //no init ,so no tacky
+                    break;
+                }
+                var result = convertValue(statement.exp(), list);
+                IRType.Var v = new IRType.Var(statement.identifier());
+                list.add(new IRType.Copy(result, v));
+            }
+            case Ast.StatementBlockItem stmt -> {
+                convertStatement(stmt.statement(), list);
+            }
+            default -> throw new UnsupportedOperationException("invalid block item " + blockItem);
+        }
     }
 
     private void convertStatement(AstNode.Statement statement, List<IR.Instruction> list) {
@@ -80,6 +84,11 @@ public class IRConverter {
                     list.add(new IRType.Label(elseLabel));
                     convertStatement(s.elseSt(), list);
                     list.add(new IRType.Label(exitLabel));
+                }
+            }
+            case Ast.Compound c -> {
+                for (AstNode.BlockItem blockItem : c.block().blockItems()) {
+                    convertBlockItem(blockItem, list);
                 }
             }
             default -> throw new UnsupportedOperationException(statement.toString());

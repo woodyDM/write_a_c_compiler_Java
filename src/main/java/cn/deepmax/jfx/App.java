@@ -29,8 +29,11 @@ public class App {
                          a=5+3*2;  
                          int b = 1+2*a;
                          int c= b*2+(a+b);
-                         if(b<=c)
+                         if(b<=c){
+                         int a=4;
                          return a+10;
+                         }
+                    
                          else
                          return a+1>50?b:c;
                     
@@ -70,10 +73,12 @@ public class App {
         Ast.AstProgram astProgram = p.parseProgram();
         if ("--parse".equals(level)) return;
 
+        astProgram = p.resolveProgram(astProgram);
+        if ("--validate".equals(level)) return;
+
         IRConverter irConverter = new IRConverter(astProgram);
         IR.Program irProgram = irConverter.convertToIR();
-        if ("--tacky".equals(level) || "--validate".equals(level)) return;
-
+        if ("--tacky".equals(level)) return;
 
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
         if ("--codegen".equals(level)) return;
@@ -107,6 +112,9 @@ public class App {
 
         Ast.AstProgram ast = p.parseProgram();
         System.out.println("--------- parser ---------");
+        System.out.println(ast.toString());
+        System.out.println("--------- resovle(validate) ---------");
+        ast = p.resolveProgram(ast);
         System.out.println(ast.toString());
 
 

@@ -30,6 +30,19 @@ public class Parser {
         return p;
     }
 
+    public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
+        List<AstNode.BlockItem> list = program.functionDefinition()
+                .body().blockItems()
+                .stream().map(this::resolveBlockItem)
+                .toList();
+        var resovledBlock = new Ast.Block(list);
+        Ast.FunctionDefinition fnDef = new Ast.FunctionDefinition(
+                program.functionDefinition().name(),
+                resovledBlock
+        );
+        return new Ast.AstProgram(fnDef);
+    }
+
     public Ast.FunctionDefinition parseFunctionDefinition() {
 
         expect(TokenType.KEYWORD, new StringTokenParam("int"));
@@ -43,9 +56,10 @@ public class Parser {
 
         List<AstNode.BlockItem> fnBody = new ArrayList<>();
         parseFunctionBody(fnBody);
+
         expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
 
-        return new Ast.FunctionDefinition(idName, fnBody);
+        return new Ast.FunctionDefinition(idName, new Ast.Block(fnBody));
     }
 
     private void parseFunctionBody(List<AstNode.BlockItem> list) {
@@ -55,7 +69,7 @@ public class Parser {
         }
     }
 
-    //blockItem ::= <statement>|<declaration>
+    //blockItem ::= <statement> | <declaration>
     private AstNode.BlockItem parseBlockItem() {
         Token nextToken = getNextToken();
         if (nextToken.type() == TokenType.KEYWORD) {
@@ -72,24 +86,30 @@ public class Parser {
                 }
                 expect(TokenType.SEMICOLON, NoneParams.NONE);
                 AstNode.Declaration declare = new Ast.Declare(id.params().toString(), init);
-                declare = resolveDeclaration(declare);
                 return new Ast.DeclareBlockItem(declare);
             }
         }
         AstNode.Statement statement = parseStatement();
-        var stmt = resolveStatement(statement);
-        return new Ast.StatementBlockItem(stmt);
+        return new Ast.StatementBlockItem(statement);
+    }
+
+    private AstNode.BlockItem resolveBlockItem(AstNode.BlockItem item) {
+        return switch (item) {
+            case Ast.DeclareBlockItem d -> new Ast.DeclareBlockItem(resolveDeclaration(d.statement()));
+            case Ast.StatementBlockItem i -> new Ast.StatementBlockItem(resolveStatement(i.statement()));
+            default -> throw new ParseException(this, "unsupported item " + item.toString());
+        };
     }
 
     private AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
         if (declaration instanceof Ast.Declare d) {
             var idValue = d.identifier();
-            boolean exist = variables.exist(idValue);
+            boolean exist = variables.existInCurrentScope(idValue);
             if (exist) {
-                throw new ParseException(this, "Duplicate variable declaration! id =  " + idValue);
+                throw new ParseException(this, "Duplicate variable declaration! id =" + idValue);
             }
             String replacedName = idValue + "." + Variables.nextId();
-            variables.put(idValue, replacedName);
+            variables.put(idValue, replacedName, true);
             return new Ast.Declare(replacedName, resolveExp(d.exp()));
         }
         throw new UnsupportedOperationException(declaration.toString());
@@ -100,6 +120,16 @@ public class Parser {
         if (nextToken == TokenType.SEMICOLON) {
             moveNext();
             return new Ast.Null();
+        }
+        if (nextToken == TokenType.OPEN_BRACE) {
+            moveNext();
+            List<AstNode.BlockItem> list = new ArrayList<>();
+            while (getNextToken() != TokenType.CLOSE_BRACE) {
+                var it = parseBlockItem();
+                list.add(it);
+            }
+            expect(TokenType.CLOSE_BRACE);
+            return new Ast.Compound(new Ast.Block(list));
         }
         if (nextToken instanceof Tokens.Keyword kw) {
             String value = kw.params().toString();
@@ -129,6 +159,7 @@ public class Parser {
                 }
             }
         }
+
         //normal exp
         AstNode.Exp node = parseExp(0);
         Ast.Expression statement = new Ast.Expression(node);
@@ -145,6 +176,15 @@ public class Parser {
             case Ast.If s -> new Ast.If(resolveExp(s.condition()),
                     resolveStatement(s.then()),
                     resolveStatement(s.elseSt()));
+            case Ast.Compound c -> {
+                this.variables = this.variables.newScope();
+                List<AstNode.BlockItem> list = c.block().blockItems()
+                        .stream().map(s -> resolveBlockItem(s))
+                        .collect(Collectors.toList());
+                var cp = new Ast.Compound(new Ast.Block(list));
+                this.variables = this.variables.parent;
+                yield cp;
+            }
             default -> throw new ParseException(this, "Unsupported " + statement.toString());
         };
     }
@@ -232,7 +272,7 @@ public class Parser {
             }
             case Ast.Var v -> {
                 String rawId = v.identifier();
-                String existReplacement = variables.get(rawId);
+                String existReplacement = variables.mappingToReplacement(rawId);
                 if (existReplacement != null) {
                     yield new Ast.Var(existReplacement);
                 } else {

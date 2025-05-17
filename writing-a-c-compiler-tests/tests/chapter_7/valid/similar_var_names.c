@@ -1,36 +1,33 @@
-#ifdef SUPPRESS_WARNINGS
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-/* Test that naming scheme does not result in conflicting variable names after alpha conversion */
+ 
 
 int main(void) {
-    int a; // a0
+    int a;  
     int result;
-    int a1 = 1; // a10
+    int a1 = 1;  
     {
-        int a = 2; //a1
-        int a1 = 2; // a11
+        int a = 2;  
+        int a1 = 2;  
         {
-            int a; // a2
+            int a;  
             {
-                int a; // a3
+                int a;  
                 {
-                    int a; // a4
+                    int a;  
                     {
-                        int a; // a5
+                        int a;  
                         {
-                            int a; // a6
+                            int a; 
                             {
-                                int a; // a7
+                                int a;  
                                 {
-                                    int a; // a8
+                                    int a;  
                                     {
-                                        int a; // a9
+                                        int a;  
                                         {
-                                            int a = 20; // a10
+                                            int a = 20;  
                                             result = a;
                                             {
-                                                int a; // a11
+                                                int a; 
                                                 a = 5;
                                                 result = result + a;
                                             }
