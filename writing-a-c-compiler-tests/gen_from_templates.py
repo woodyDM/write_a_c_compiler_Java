@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """Autogenerate several very similar test cases where we create specific interference graphs"""
 import sys
 import textwrap
