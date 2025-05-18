@@ -3,6 +3,7 @@ package cn.deepmax.jfx.ir;
 import cn.deepmax.jfx.exception.SemanticException;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.AstNode;
+import cn.deepmax.jfx.parse.Labels;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,19 +40,23 @@ public class IRConverter {
         switch (blockItem) {
             case Ast.DeclareBlockItem d -> {
                 Ast.Declare statement = (Ast.Declare) d.statement();
-                if (statement.exp() == null) {
-                    //no init ,so no tacky
-                    break;
-                }
-                var result = convertValue(statement.exp(), list);
-                IRType.Var v = new IRType.Var(statement.identifier());
-                list.add(new IRType.Copy(result, v));
+                convertDeclare(statement, list);
             }
             case Ast.StatementBlockItem stmt -> {
                 convertStatement(stmt.statement(), list);
             }
             default -> throw new UnsupportedOperationException("invalid block item " + blockItem);
         }
+    }
+
+    private void convertDeclare(Ast.Declare statement, List<IR.Instruction> list) {
+        if (statement.exp() == null) {
+            //no init ,so no tacky
+            return;
+        }
+        var result = convertValue(statement.exp(), list);
+        IRType.Var v = new IRType.Var(statement.identifier());
+        list.add(new IRType.Copy(result, v));
     }
 
     private void convertStatement(AstNode.Statement statement, List<IR.Instruction> list) {
@@ -91,7 +96,62 @@ public class IRConverter {
                     convertBlockItem(blockItem, list);
                 }
             }
+            case Ast.AnnotationLabeledStatement ano -> {
+                String continueLabelOf = Labels.continueLabelOf(ano.label());
+                String breakLabelOf = Labels.breakLabelOf(ano.label());
+                switch (ano.statement()) {
+                    case Ast.Break bk -> list.add(new IRType.Jump(breakLabelOf));
+                    case Ast.Continue ct -> list.add(new IRType.Jump(continueLabelOf));
+                    case Ast.DoWhile w -> {
+                        String startLabel = "dowhile_start_" + IRType.Label.nextId();
+                        list.add(new IRType.Label(startLabel));
+                        convertStatement(w.body(), list);
+                        list.add(new IRType.Label(continueLabelOf));
+                        var conditionResult = convertValue(w.condition(), list);
+                        list.add(new IRType.JumpIfNotZero(conditionResult, startLabel));
+                        list.add(new IRType.Label(breakLabelOf));
+                    }
+                    case Ast.While w -> {
+                        list.add(new IRType.Label(continueLabelOf));
+                        var conditionResult = convertValue(w.condition(), list);
+                        list.add(new IRType.JumpIfZero(conditionResult, breakLabelOf));
+                        convertStatement(w.body(), list);
+                        list.add(new IRType.Jump(continueLabelOf));
+                        list.add(new IRType.Label(breakLabelOf));
+                    }
+                    case Ast.For f -> {
+                        convertForInit(f.init(), list);
+                        String startLabel = "for_start_" + IRType.Label.nextId();
+                        list.add(new IRType.Label(startLabel));
+                        var conditionV = f.condition() == null ? new IRType.Constant(1) : convertValue(f.condition(), list);
+                        list.add(new IRType.JumpIfZero(conditionV, breakLabelOf));
+                        convertStatement(f.body(), list);
+                        list.add(new IRType.Label(continueLabelOf));
+                        if (f.post() != null) convertValue(f.post(), list);
+                        list.add(new IRType.Jump(startLabel));
+                        list.add(new IRType.Label(breakLabelOf));
+                    }
+
+                    default -> throw new UnsupportedOperationException(ano.statement().toString());
+                }
+            }
             default -> throw new UnsupportedOperationException(statement.toString());
+        }
+    }
+
+    private void convertForInit(AstNode.ForInit init, List<IR.Instruction> list) {
+        switch (init) {
+            case Ast.ForInitDeclare d -> {
+                Ast.Declare dd = (Ast.Declare) (d.declaration());
+                convertDeclare(dd, list);
+            }
+            case Ast.ForInitExp e -> {
+                if (e.exp() != null) {
+                    convertValue(e.exp(), list);
+
+                }
+            }
+            default -> throw new UnsupportedOperationException(init.toString());
         }
     }
 

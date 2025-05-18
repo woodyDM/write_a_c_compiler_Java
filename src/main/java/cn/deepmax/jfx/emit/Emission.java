@@ -78,7 +78,8 @@ public class Emission {
                     pushIns(String.format("set%s\t%s", scc.condition().toString(), genOperand1Byte(scc.operand())));
                 }
                 case Asm.Label label -> {
-                    pushIns(String.format(".L%s :", label.id()));
+                    String ins = String.format(".L%s :", label.id());
+                    sb.append((ins)).append("\n");
                 }
                 default -> throw new UnsupportedOperationException(it.toString());
             }

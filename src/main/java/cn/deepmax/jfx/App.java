@@ -21,15 +21,11 @@ public class App {
     static String input =
             """
                     int main(void) {
-                        int a = 0;
-                        for (; ; ) {
-                            a = a + 1;
-                            if (a > 3)
-                                break;
-                        }
-                    
-                        return a;
+                        for (int i = 400; ; i = i - 100)
+                            if (i == 100)
+                                return 0;
                     }
+                    
                     """;
 
 

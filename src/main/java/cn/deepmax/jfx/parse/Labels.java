@@ -12,6 +12,14 @@ public class Labels {
         return labelValue == null;
     }
 
+    public static String breakLabelOf(String l) {
+        return "break_" + l;
+    }
+
+    public static String continueLabelOf(String l) {
+        return "continue_" + l;
+    }
+
     public Labels makeTempLabel() {
         String l = "Loop." + id++;
         Labels labels = new Labels();
