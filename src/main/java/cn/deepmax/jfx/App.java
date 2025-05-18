@@ -20,22 +20,15 @@ import java.nio.file.Paths;
 public class App {
     static String input =
             """
-                    int   main   		
+                    int main(void) {
+                        int a = 0;
+                        for (; ; ) {
+                            a = a + 1;
+                            if (a > 3)
+                                break;
+                        }
                     
-                    
-                    (  void ) {
-                        int i;
-                         for( ;   ; ){
-                            if(i>100) break;
-                            else{
-                                i=i+5;
-                            }
-                         }
-                             
-                          return i;
-                    
-                    
-                    
+                        return a;
                     }
                     """;
 

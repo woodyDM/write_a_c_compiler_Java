@@ -32,6 +32,10 @@ public class Ast {
     public record Null() implements AstNode.Statement {
     }
 
+    public record AnnotationLabeledStatement(AstNode.Statement statement, String label) implements AstNode.Statement {
+
+    }
+
     public record Break() implements AstNode.Statement {
     }
 
