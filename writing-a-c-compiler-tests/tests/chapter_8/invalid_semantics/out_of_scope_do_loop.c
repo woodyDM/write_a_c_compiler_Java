@@ -1,6 +1,4 @@
-/* Test case from Listing 8-3:
- * A variable declared in a loop body is out of scope in the controlling expression
- */
+ 
 
 int main(void) {
     do {

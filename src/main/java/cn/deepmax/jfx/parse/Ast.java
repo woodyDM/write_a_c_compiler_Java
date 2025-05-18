@@ -32,6 +32,33 @@ public class Ast {
     public record Null() implements AstNode.Statement {
     }
 
+    public record Break() implements AstNode.Statement {
+    }
+
+    public record BreakLabel(String label) implements AstNode.Statement {
+    }
+
+    public record ContinueLabel(String label) implements AstNode.Statement {
+    }
+
+    public record Continue() implements AstNode.Statement {
+    }
+
+    public record While(AstNode.Exp condition, AstNode.Statement body) implements AstNode.Statement {
+    }
+
+    public record DoWhile(AstNode.Statement body, AstNode.Exp condition) implements AstNode.Statement {
+    }
+
+    public record For(AstNode.ForInit init, @Nullable AstNode.Exp condition, @Nullable AstNode.Exp post,
+                      AstNode.Statement body) implements AstNode.Statement {
+    }
+
+    public record ForInitDeclare(AstNode.Declaration declaration) implements AstNode.ForInit {
+    }
+
+    public record ForInitExp(@Nullable AstNode.Exp exp) implements AstNode.ForInit {
+    }
 
     public record Block(List<AstNode.BlockItem> blockItems) {
 

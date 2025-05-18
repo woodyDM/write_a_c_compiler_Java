@@ -72,25 +72,26 @@ public class Parser {
     //blockItem ::= <statement> | <declaration>
     private AstNode.BlockItem parseBlockItem() {
         Token nextToken = getNextToken();
-        if (nextToken.type() == TokenType.KEYWORD) {
-            Tokens.Keyword kw = (Tokens.Keyword) nextToken;
-            if (kw.params().toString().equals("int")) {
-                //declaration
-                moveNext();
-                Token id = expect(TokenType.ID, null);
-                AstNode.Exp init = null;
-                if (getNextToken() == TokenType.ASSIGNMENT) {
-                    //init
-                    moveNext();
-                    init = parseExp(0);
-                }
-                expect(TokenType.SEMICOLON, NoneParams.NONE);
-                AstNode.Declaration declare = new Ast.Declare(id.params().toString(), init);
-                return new Ast.DeclareBlockItem(declare);
-            }
+        if (nextToken.isKeyword("int")) {
+            //declaration
+            moveNext();
+            AstNode.Declaration declare = parseDeclaration();
+            return new Ast.DeclareBlockItem(declare);
         }
         AstNode.Statement statement = parseStatement();
         return new Ast.StatementBlockItem(statement);
+    }
+
+    private AstNode.Declaration parseDeclaration() {
+        Token id = expect(TokenType.ID, null);
+        AstNode.Exp init = null;
+        if (getNextToken() == TokenType.ASSIGNMENT) {
+            //init
+            moveNext();
+            init = parseExp(0);
+        }
+        expect(TokenType.SEMICOLON);
+        return new Ast.Declare(id.params().toString(), init);
     }
 
     private AstNode.BlockItem resolveBlockItem(AstNode.BlockItem item) {
@@ -132,17 +133,17 @@ public class Parser {
             return new Ast.Compound(new Ast.Block(list));
         }
         if (nextToken instanceof Tokens.Keyword kw) {
+            moveNext();
+
             String value = kw.params().toString();
             switch (value) {
                 case "return" -> {
-                    expect(TokenType.KEYWORD, new StringTokenParam("return"));
                     AstNode.Exp node = parseExp(0);
                     Ast.ReturnStatement statement = new Ast.ReturnStatement(node);
                     expect(TokenType.SEMICOLON, NoneParams.NONE);
                     return statement;
                 }
                 case "if" -> {
-                    moveNext();
                     expect(TokenType.OPEN_PARENTHESIS);
                     AstNode.Exp exp = parseExp(0);
                     expect(TokenType.CLOSE_PARENTHESIS);
@@ -157,6 +158,39 @@ public class Parser {
                     }
                     return new Ast.If(exp, thenStmt, elseSt);
                 }
+                case "while" -> {
+                    expect(TokenType.OPEN_PARENTHESIS);
+                    AstNode.Exp exp = parseExp(0);
+                    expect(TokenType.CLOSE_PARENTHESIS);
+                    var whileBody = parseStatement();
+                    return new Ast.While(exp, whileBody);
+                }
+                case "break" -> {
+                    expect(TokenType.SEMICOLON);
+                    return new Ast.Break();
+                }
+                case "continue" -> {
+                    expect(TokenType.SEMICOLON);
+                    return new Ast.Continue();
+                }
+                case "do" -> {
+                    var doBody = parseStatement();
+                    expect(TokenType.KEYWORD, new StringTokenParam("while"));
+                    expect(TokenType.OPEN_PARENTHESIS);
+                    AstNode.Exp exp = parseExp(0);
+                    expect(TokenType.CLOSE_PARENTHESIS);
+                    expect(TokenType.SEMICOLON);
+                    return new Ast.DoWhile(doBody, exp);
+                }
+                case "for" -> {
+                    expect(TokenType.OPEN_PARENTHESIS);
+                    AstNode.ForInit forInit = parseForInit();
+                    var conditionoExp = tryParseExp(TokenType.SEMICOLON);
+                    var postExp = tryParseExp(TokenType.CLOSE_PARENTHESIS);
+                    var body = parseStatement();
+                    return new Ast.For(forInit, conditionoExp, postExp, body);
+                }
+                default -> throw new ParseException(this, "unsupported keyword " + nextToken);
             }
         }
 
@@ -165,6 +199,30 @@ public class Parser {
         Ast.Expression statement = new Ast.Expression(node);
         expect(TokenType.SEMICOLON, NoneParams.NONE);
         return statement;
+    }
+
+    private AstNode.ForInit parseForInit() {
+        Token nextToken = getNextToken();
+        if (nextToken.isKeyword("int")) {
+            //declare
+            moveNext();
+            var dec = parseDeclaration();
+            return new Ast.ForInitDeclare(dec);
+        }
+        //exp ?
+        var exp = tryParseExp(TokenType.SEMICOLON);
+        return new Ast.ForInitExp(exp);
+    }
+
+    private AstNode.Exp tryParseExp(TokenType end) {
+        Token nextToken = getNextToken();
+        if (nextToken == end) {
+            moveNext();
+            return null;
+        }
+        var exp = parseExp(0);
+        expect(end);
+        return exp;
     }
 
     private AstNode.Statement resolveStatement(AstNode.Statement statement) {
@@ -185,7 +243,31 @@ public class Parser {
                 this.variables = this.variables.parent;
                 yield cp;
             }
+            case Ast.While w -> new Ast.While(resolveExp(w.condition()),
+                    resolveStatement(w.body()));
+            case Ast.DoWhile w -> new Ast.DoWhile(resolveStatement(w.body()),
+                    resolveExp(w.condition()));
+            case Ast.Break b -> b;
+            case Ast.Continue c -> c;
+            case Ast.BreakLabel l -> l;
+            case Ast.ContinueLabel l -> l;
+            case Ast.For f -> new Ast.For(
+                    resolveForInit(f.init()),
+                    resolveExp(f.condition()),
+                    resolveExp(f.post()),
+                    resolveStatement(f.body())
+            );
             default -> throw new ParseException(this, "Unsupported " + statement.toString());
+        };
+    }
+
+    private AstNode.ForInit resolveForInit(AstNode.ForInit init) {
+        return switch (init) {
+            case Ast.ForInitDeclare d -> new Ast.ForInitDeclare(
+                    resolveDeclaration(d.declaration())
+            );
+            case Ast.ForInitExp e -> new Ast.ForInitExp(resolveExp(e.exp()));
+            default -> throw new ParseException(this, "unsupported init " + init.toString());
         };
     }
 

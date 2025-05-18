@@ -24,6 +24,9 @@ public interface AstNode {
     interface Factor {
 
     }
+    interface ForInit{
+
+    }
 
     interface UnaryOperator {
     }

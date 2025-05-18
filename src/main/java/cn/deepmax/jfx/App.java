@@ -24,18 +24,15 @@ public class App {
                     
                     
                     (  void ) {
-                        int a=3+4;
-                    
-                         a=5+3*2;  
-                         int b = 1+2*a;
-                         int c= b*2+(a+b);
-                         if(b<=c){
-                         int a=4;
-                         return a+10;
+                        int i;
+                         for( ;   ; ){
+                            if(i>100) break;
+                            else{
+                                i=i+5;
+                            }
                          }
-                    
-                         else
-                         return a+1>50?b:c;
+                             
+                          return i;
                     
                     
                     
