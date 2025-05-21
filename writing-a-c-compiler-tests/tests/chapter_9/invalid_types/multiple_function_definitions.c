@@ -1,4 +1,4 @@
-/* Function 'foo' is defined twice */
+ 
 int foo(void){
     return 3;
 }

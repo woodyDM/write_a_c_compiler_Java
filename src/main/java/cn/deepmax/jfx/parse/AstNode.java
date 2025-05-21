@@ -5,10 +5,18 @@ public interface AstNode {
     interface Program {
     }
 
-    interface FunctionDef {
+    interface BlockItem {
+
     }
 
-    interface BlockItem {
+    /**
+     * 函数参数列表
+     */
+    interface Param {
+
+    }
+
+    interface Argument {
 
     }
 
@@ -24,7 +32,8 @@ public interface AstNode {
     interface Factor {
 
     }
-    interface ForInit{
+
+    interface ForInit {
 
     }
 

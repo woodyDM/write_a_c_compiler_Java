@@ -3,6 +3,6 @@ int foo(int a) {
 }
 
 int main(void) {
-    /* foo is called with too many arguments */
+   
     return foo(1, 2);
 }

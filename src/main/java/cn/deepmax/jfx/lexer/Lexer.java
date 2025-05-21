@@ -85,6 +85,7 @@ public class Lexer {
 
                 case '?' -> TokenType.QUESTION;
                 case ':' -> TokenType.COLON;
+                case ',' -> TokenType.COMMA;
                 default -> throw new LexerException(this, "invalid symbol " + cb);
             };
             pos++;
@@ -150,7 +151,7 @@ public class Lexer {
     }
 
     static boolean isSymbol(byte b) {
-        return b == '(' || b == ')' || b == '{' || b == '}' || b == ';' || b == '?' || b == ':';
+        return b == '(' || b == ')' || b == '{' || b == '}' || b == ';' || b == '?' || b == ':' || b == ',';
     }
 
     static boolean isDigit(byte b) {

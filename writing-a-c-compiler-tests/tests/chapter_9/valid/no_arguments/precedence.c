@@ -3,8 +3,6 @@ int three(void) {
 }
 
 int main(void) {
-    /* The function call operator () is higher precedence
-     * than unary prefix operators
-     */
+ 
     return !three();
 }

@@ -7,12 +7,7 @@ import java.util.List;
 public class Ast {
 
 
-    public record AstProgram(FunctionDefinition functionDefinition) implements AstNode.Program {
-
-    }
-
-    public record FunctionDefinition(String name, Block body)
-            implements AstNode.FunctionDef {
+    public record AstProgram(List<FunctionDeclare> functionDeclarations) implements AstNode.Program {
 
     }
 
@@ -68,11 +63,25 @@ public class Ast {
 
     }
 
+    public record VoidParam() implements AstNode.Param {
+    }
+
+    public record VarParam(String type, @Nullable String identifier) implements AstNode.Param {
+    }
+
+    public record ArgumentList(List<AstNode.Exp> expList) {
+    }
+
     public record Compound(Block block) implements AstNode.Statement {
 
     }
 
-    public record Declare(String identifier, @Nullable AstNode.Exp exp) implements AstNode.Declaration {
+    public record VarDeclare(String identifier, @Nullable AstNode.Exp exp) implements AstNode.Declaration {
+
+    }
+
+    public record FunctionDeclare(String identifier, List<AstNode.Param> params, @Nullable Block body)
+            implements AstNode.Declaration {
 
     }
 
@@ -109,6 +118,10 @@ public class Ast {
 
     public record Conditional(AstNode.Exp condition, AstNode.Exp trueExp, AstNode.Exp falseExp)
             implements AstNode.Exp {
+
+    }
+
+    public record FunctionCall(String identifier, List<AstNode.Exp> args) implements AstNode.Factor {
 
     }
 

@@ -1,5 +1,4 @@
-/* Make sure we don't clobber argument passed in EDX register by
- * performing a division operation that uses that register */
+ 
 
 int x(int a, int b, int c, int d, int e, int f) {
     return a == 1 && b == 2 && c == 3 && d == 4 && e == 5 && f == 6;

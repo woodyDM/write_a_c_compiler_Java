@@ -24,46 +24,116 @@ public class Parser {
     }
 
     public Ast.AstProgram parseProgram() {
-        Ast.FunctionDefinition fnDef = parseFunctionDefinition();
-        Ast.AstProgram p = new Ast.AstProgram(fnDef);
+        List<Ast.FunctionDeclare> funcs = parseFunctionDeclarationList();
+        Ast.AstProgram p = new Ast.AstProgram(funcs);
 
         expect(TokenType.EOF, NoneParams.NONE);
         return p;
     }
 
     public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
-        List<AstNode.BlockItem> list = program.functionDefinition()
-                .body()
-                .blockItems()
+        List<Ast.FunctionDeclare> list = program.functionDeclarations()
                 .stream()
-                .map(this::resolveBlockItem)
-                .map(this::labelBlockItem)
-                .toList();
-        var resovledBlock = new Ast.Block(list);
-        Ast.FunctionDefinition fnDef = new Ast.FunctionDefinition(
-                program.functionDefinition().name(),
-                resovledBlock
-        );
-        return new Ast.AstProgram(fnDef);
+                .map(d -> {
+                    return new Ast.FunctionDeclare(
+                            d.identifier(),
+                            d.params(),
+                            resolveBlock(d.body())
+                    );
+                }).toList();
+
+        return new Ast.AstProgram(list);
     }
 
-    public Ast.FunctionDefinition parseFunctionDefinition() {
+    private Ast.Block resolveBlock(Ast.Block block) {
+        List<AstNode.BlockItem> list = block.blockItems()
+                .stream().map(this::resolveBlockItem)
+                .map(this::labelBlockItem)
+                .toList();
+        return new Ast.Block(list);
+    }
 
+    public List<Ast.FunctionDeclare> parseFunctionDeclarationList() {
+        List<Ast.FunctionDeclare> result = new ArrayList<>();
+        Ast.FunctionDeclare it;
+        while ((it = parseFunctionDeclaration()) != null) {
+            result.add(it);
+        }
+        return result;
+    }
+
+    private Ast.FunctionDeclare parseFunctionDeclaration() {
+        if (getNextToken() == TokenType.EOF) {
+            return null;
+        }
         expect(TokenType.KEYWORD, new StringTokenParam("int"));
         Token idToken = expect(TokenType.ID, null);
-        String idName = idToken.params().toString();
 
         expect(TokenType.OPEN_PARENTHESIS, NoneParams.NONE);
-        expect(TokenType.KEYWORD, new StringTokenParam("void"));
+        var paramList = parseParamList();
         expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
-        expect(TokenType.OPEN_BRACE, NoneParams.NONE);
+        Token nextToken = getNextToken();
 
-        List<AstNode.BlockItem> fnBody = new ArrayList<>();
-        parseFunctionBody(fnBody);
+        Ast.Block block = null;
+        if (nextToken == TokenType.SEMICOLON) {
+            //declare
+            moveNext();
+        } else {
+            //definite
+            List<AstNode.BlockItem> fnBody = new ArrayList<>();
 
-        expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
+            expect(TokenType.OPEN_BRACE, NoneParams.NONE);
+            parseFunctionBody(fnBody);
+            expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
+            block = new Ast.Block(fnBody);
+        }
+        return new Ast.FunctionDeclare(idToken.params().toString(), paramList, block);
+    }
 
-        return new Ast.FunctionDefinition(idName, new Ast.Block(fnBody));
+    /**
+     * 函数声明参数列表
+     *
+     * @return
+     */
+    private List<AstNode.Param> parseParamList() {
+        List<AstNode.Param> list = new ArrayList<>();
+        Token next;
+        while (true) {
+            next = getNextToken();
+            if (next == TokenType.CLOSE_PARENTHESIS) {
+                break;
+            }
+            if (next == TokenType.COMMA) {
+                if (list.isEmpty()) {
+                    throw new ParseException(this, "no param before comma!");
+                }
+                moveNext();
+                next = getNextToken();
+            }
+            if (next.isKeyword("void")) {
+                if (list.isEmpty()) {
+                    moveNext();
+                    list.add(new Ast.VoidParam());
+                    return list;
+                } else {
+                    throw new ParseException(this, "Function not pure void");
+                }
+            } else if (next.isKeyword("int")) {
+                moveNext();
+                var nx = getNextToken();
+                if (nx.type() == TokenType.ID) {
+                    Token id = expect(TokenType.ID, null);
+                    list.add(new Ast.VarParam("int", id.params().toString()));
+                } else if (nx == TokenType.COMMA || nx == TokenType.CLOSE_PARENTHESIS) {
+                    list.add(new Ast.VarParam("int", null));
+                } else {
+                    throw new ParseException(this, "expect id|comma|) , but got " + nx);
+                }
+            } else {
+                throw new ParseException(this, "expect keyword[void] or keyword[int] ,but got " + next);
+            }
+        }
+        return list;
     }
 
     private void parseFunctionBody(List<AstNode.BlockItem> list) {
@@ -79,23 +149,36 @@ public class Parser {
         if (nextToken.isKeyword("int")) {
             //declaration
             moveNext();
-            AstNode.Declaration declare = parseDeclaration();
-            return new Ast.DeclareBlockItem(declare);
+            Token id = expect(TokenType.ID, null);
+            var next = getNextToken();
+            AstNode.Declaration declaration = next == TokenType.OPEN_PARENTHESIS ?
+                    parseFuncDeclaration((Tokens.Id) id) :
+                    parseVarDeclaration((Tokens.Id) id, next);
+
+            return new Ast.DeclareBlockItem(declaration);
         }
         AstNode.Statement statement = parseStatement();
         return new Ast.StatementBlockItem(statement);
     }
 
-    private AstNode.Declaration parseDeclaration() {
-        Token id = expect(TokenType.ID, null);
+    private AstNode.Declaration parseFuncDeclaration(Tokens.Id id) {
+        moveNext();
+        //parse param list
+        List<AstNode.Param> params = parseParamList();
+        expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
+        expect(TokenType.SEMICOLON);
+        return new Ast.FunctionDeclare(id.params().toString(), params, null);
+    }
+
+    private AstNode.Declaration parseVarDeclaration(Tokens.Id id, Token next) {
         AstNode.Exp init = null;
-        if (getNextToken() == TokenType.ASSIGNMENT) {
+        if (next == TokenType.ASSIGNMENT) {
             //init
             moveNext();
             init = parseExp(0);
         }
         expect(TokenType.SEMICOLON);
-        return new Ast.Declare(id.params().toString(), init);
+        return new Ast.VarDeclare(id.params().toString(), init);
     }
 
     private AstNode.BlockItem resolveBlockItem(AstNode.BlockItem item) {
@@ -115,7 +198,7 @@ public class Parser {
     }
 
     private AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
-        if (declaration instanceof Ast.Declare d) {
+        if (declaration instanceof Ast.VarDeclare d) {
             var idValue = d.identifier();
             boolean exist = variables.existInCurrentScope(idValue);
             if (exist) {
@@ -123,7 +206,7 @@ public class Parser {
             }
             String replacedName = idValue + "." + Variables.nextId();
             variables.put(idValue, replacedName, true);
-            return new Ast.Declare(replacedName, resolveExp(d.exp()));
+            return new Ast.VarDeclare(replacedName, resolveExp(d.exp()));
         }
         throw new UnsupportedOperationException(declaration.toString());
     }
@@ -218,7 +301,9 @@ public class Parser {
         if (nextToken.isKeyword("int")) {
             //declare
             moveNext();
-            var dec = parseDeclaration();
+            Token id = expect(TokenType.ID, null);
+            var next = getNextToken();
+            var dec = parseVarDeclaration((Tokens.Id) id, next);
             return new Ast.ForInitDeclare(dec);
         }
         //exp ?
@@ -350,6 +435,20 @@ public class Parser {
     public AstNode.Factor parseFactor() {
         Token token = moveToNextToken();
         return switch (token.type()) {
+            case ID -> {
+                Token nt = getNextToken();
+                if (nt == TokenType.OPEN_PARENTHESIS) {
+                    //function call
+                    expect(TokenType.OPEN_PARENTHESIS);
+                    Ast.ArgumentList argumentList = parseArgList();
+                    expect(TokenType.CLOSE_PARENTHESIS);
+                    yield new Ast.FunctionCall(token.params().toString(), argumentList.expList());
+                } else {
+                    Tokens.Id id = (Tokens.Id) token;
+                    Ast.Var exp = new Ast.Var(id.params().toString());
+                    yield new Ast.ExpFactor(exp);
+                }
+            }
             case CONSTANT -> {
                 String v = token.params().toString();
                 yield new Ast.IntConstantFactor(Integer.parseInt(v));
@@ -364,13 +463,22 @@ public class Parser {
                 expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
                 yield new Ast.ExpFactor(inner);
             }
-            case ID -> {
-                Tokens.Id id = (Tokens.Id) token;
-                Ast.Var exp = new Ast.Var(id.params().toString());
-                yield new Ast.ExpFactor(exp);
-            }
+
             default -> throw new ParseException(this, "Malformed factor:" + token.toString());
         };
+    }
+
+    private Ast.ArgumentList parseArgList() {
+        Token t;
+        List<AstNode.Exp> list = new ArrayList<>();
+        while ((t = getNextToken()) != TokenType.CLOSE_PARENTHESIS) {
+            if (t == TokenType.COMMA) {
+                moveNext();
+            }
+            AstNode.Exp exp = parseExp(0);
+            list.add(exp);
+        }
+        return new Ast.ArgumentList(list);
     }
 
     public AstNode.Exp parseExp(int minPrec) {
@@ -513,7 +621,11 @@ public class Parser {
         int end = Math.min(tokenList.size(), pos + 5);
         var list = tokenList.subList(pos, end);
         String tokens = list.stream().map(i -> i.toString()).collect(Collectors.joining(","));
-        return String.format("@Line[%s] near tokens:[%s]", currentLine.params().toString(), tokens);
+        return String.format("@Line[%s] near tokens:[%s]", lineInfo(), tokens);
+    }
+
+    private String lineInfo() {
+        return currentLine == null ? "1" : currentLine.params().toString();
     }
 
     /**

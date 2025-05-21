@@ -5,8 +5,6 @@ int main(void) {
 }
 
 int foo(int x) {
-    /* Only the parameter names from this definition are in scope.
-     * Parameter names from earlier declarations of foo aren't!
-     */
+    
     return a;
 }

@@ -21,9 +21,10 @@ public class IRConverter {
     }
 
     private IR.FunctionDef convertFn() {
-        var fn = ((Ast.AstProgram) program).functionDefinition();
-        List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
-        return new IRType.FunctionDef(fn.name(), instructions);
+        var fn = ((Ast.AstProgram) program).functionDeclarations();
+//        List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
+//        return new IRType.FunctionDef(fn.name(), instructions);
+        return null;
     }
 
     private List<IR.Instruction> convertBlockItems(List<AstNode.BlockItem> itemList) {
@@ -39,7 +40,7 @@ public class IRConverter {
     private void convertBlockItem(AstNode.BlockItem blockItem, List<IR.Instruction> list) {
         switch (blockItem) {
             case Ast.DeclareBlockItem d -> {
-                Ast.Declare statement = (Ast.Declare) d.statement();
+                Ast.VarDeclare statement = (Ast.VarDeclare) d.statement();
                 convertDeclare(statement, list);
             }
             case Ast.StatementBlockItem stmt -> {
@@ -49,7 +50,7 @@ public class IRConverter {
         }
     }
 
-    private void convertDeclare(Ast.Declare statement, List<IR.Instruction> list) {
+    private void convertDeclare(Ast.VarDeclare statement, List<IR.Instruction> list) {
         if (statement.exp() == null) {
             //no init ,so no tacky
             return;
@@ -142,7 +143,7 @@ public class IRConverter {
     private void convertForInit(AstNode.ForInit init, List<IR.Instruction> list) {
         switch (init) {
             case Ast.ForInitDeclare d -> {
-                Ast.Declare dd = (Ast.Declare) (d.declaration());
+                Ast.VarDeclare dd = (Ast.VarDeclare) d.declaration();
                 convertDeclare(dd, list);
             }
             case Ast.ForInitExp e -> {

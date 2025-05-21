@@ -7,7 +7,6 @@ int foo(void) {
 }
 
 int main(void) {
-    /* Use multiple function calls in an expression,
-     * make sure neither overwrites the other's return value in EAX */
+     
     return foo() + bar() / 3;
 }
