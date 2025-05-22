@@ -34,10 +34,10 @@ public class App {
                         if (x != 3) {
                             return 1;
                         }
-                        if (y != 589680) {
+                        if (y != 589680/2) {
                             return 2;
                         }
-                        return x + (y % 256);
+                        return x / (y % 256);
                     }
                     
                     """;

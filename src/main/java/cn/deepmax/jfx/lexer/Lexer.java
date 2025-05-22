@@ -36,6 +36,23 @@ public class Lexer {
         return r;
     }
 
+    private Token parseNextTwoSlash() {
+        if (pos + 1 >= len) {
+            return TokenType.DIV;
+        }
+        var next = data[pos + 1];
+
+        if (next == '/') {
+            pos++;
+            return TokenType.COMMENT_LINE;
+        } else if (next == '*') {
+            pos++;
+            return TokenType.COMMENT_MUL_LINE_START;
+        } else {
+            return TokenType.DIV;
+        }
+    }
+
     private Token parseNextTwo(char next, Token single, Token two) {
         if (pos + 1 < len && data[pos + 1] == next) {
             pos++;
@@ -70,8 +87,8 @@ public class Lexer {
                 case '~' -> TokenType.BITWISE;
 
                 case '+' -> TokenType.PLUS;
-                case '*' -> TokenType.MULTIP;
-                case '/' -> TokenType.DIV;
+                case '*' -> parseNextTwo('/', TokenType.MULTIP, TokenType.COMMENT_MUL_LINE_END);
+                case '/' -> parseNextTwoSlash();
                 case '%' -> TokenType.REMINDER;
 
                 case '-' -> parseNextTwo('-', TokenType.NEG, TokenType.DECREMENT);

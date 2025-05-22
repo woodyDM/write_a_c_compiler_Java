@@ -39,7 +39,9 @@ public enum TokenType implements Token {
     COMMA(","),
     SHARP("#"),
 
-
+    COMMENT_LINE("//"),
+    COMMENT_MUL_LINE_START("/*"),
+    COMMENT_MUL_LINE_END("*/"),
     NEWLINE,
     EOF,
     ;
