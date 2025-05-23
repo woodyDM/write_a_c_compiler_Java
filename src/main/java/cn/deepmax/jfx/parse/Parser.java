@@ -34,14 +34,8 @@ public class Parser {
     public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
         List<Ast.FunctionDeclare> list = program.functionDeclarations()
                 .stream()
-                .map(d -> {
-                    return new Ast.FunctionDeclare(
-                            d.identifier(),
-                            d.params(),
-                            resolver.resolveBlock(d.body())
-                    );
-                }).toList();
-
+                .map(f -> resolver.resolveFunctionDeclare(f))
+                .toList();
         return new Ast.AstProgram(list);
     }
 
@@ -105,7 +99,6 @@ public class Parser {
             if (next.isKeyword("void")) {
                 if (list.isEmpty()) {
                     moveNext();
-                    list.add(new Ast.VoidParam());
                     return list;
                 } else {
                     throw new ParseException(this, "Function not pure void");

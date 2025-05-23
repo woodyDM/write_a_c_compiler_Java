@@ -2,7 +2,7 @@ package cn.deepmax.jfx.asm;
 
 import cn.deepmax.jfx.ir.IR;
 import cn.deepmax.jfx.ir.IRType;
-import cn.deepmax.jfx.parse.Variables;
+import cn.deepmax.jfx.parse.Identifiers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ public class AsmAst {
     private List<AssemblyConstruct.Instruction> transInstruction(List<IR.Instruction> body) {
         List<AssemblyConstruct.Instruction> list = new ArrayList<>();
         //first AllocateStaci
-        list.add(new Asm.AllocateStack(Variables.currentNumber() * 4));
+        list.add(new Asm.AllocateStack(Identifiers.currentNumber() * 4));
         for (IR.Instruction ir : body) {
             switch (ir) {
                 case IRType.Return ret -> {

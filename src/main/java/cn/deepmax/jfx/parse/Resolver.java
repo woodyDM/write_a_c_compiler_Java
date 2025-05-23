@@ -10,12 +10,20 @@ import java.util.stream.Collectors;
  */
 class Resolver {
 
-    private Variables variables = new Variables();
+    private Identifiers identifiers = new Identifiers();
     private Labels currentLabel = new Labels();
 
+    Ast.FunctionDeclare resolveFunctionDeclare(Ast.FunctionDeclare fun) {
+        return (Ast.FunctionDeclare) resolveFunctionDeclaration(fun);
+    }
+
     Ast.Block resolveBlock(Ast.Block block) {
+        if (block == null) {
+            return null;
+        }
         List<AstNode.BlockItem> list = block.blockItems()
-                .stream().map(this::resolveBlockItem)
+                .stream()
+                .map(this::resolveBlockItem)
                 .map(this::labelBlockItem)
                 .toList();
         return new Ast.Block(list);
@@ -39,17 +47,47 @@ class Resolver {
 
 
     AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
-        if (declaration instanceof Ast.VarDeclare d) {
-            var idValue = d.identifier();
-            boolean exist = variables.existInCurrentScope(idValue);
-            if (exist) {
-                throw new SemanticException("Duplicate variable declaration! id =" + idValue);
+        return switch (declaration) {
+            case Ast.VarDeclare d -> {
+                var idValue = d.identifier();
+                identifiers.checkVar(idValue);
+                String replacedName = identifiers.putVar(idValue, true);
+                yield new Ast.VarDeclare(replacedName, resolveExp(d.exp()));
             }
-            String replacedName = idValue + "." + Variables.nextId();
-            variables.put(idValue, replacedName, true);
-            return new Ast.VarDeclare(replacedName, resolveExp(d.exp()));
+            case Ast.FunctionDeclare f -> resolveFunctionDeclaration(f);
+            default -> fail("unsupported " + declaration);
+        };
+
+    }
+
+    private AstNode.Declaration resolveFunctionDeclaration(Ast.FunctionDeclare f) {
+        var exist = identifiers.funMap.get(f.identifier());
+        if (exist != null) {
+            if (exist.currentScope() && !exist.hasLinkage()) {
+                return fail("Duplicate declaration of function " + f.identifier());
+            }
+            if (!exist.functionDeclare().sameParamDef(f)) {
+                return fail("declaration is incompatible with previous :" + f.identifier());
+            }
         }
-        throw new UnsupportedOperationException(declaration.toString());
+        identifiers.putFunc(f.identifier(), f);
+        this.identifiers = this.identifiers.newScope();
+        List<AstNode.Param> resolvedParams = f.params().stream()
+                .map(this::resolveParam)
+                .toList();
+        Ast.Block newBody = resolveBlock(f.body());
+        this.identifiers = this.identifiers.parent;
+        return new Ast.FunctionDeclare(f.identifier(), resolvedParams, newBody);
+    }
+
+    private AstNode.Param resolveParam(AstNode.Param param) {
+        if (param instanceof Ast.VarParam v) {
+            identifiers.checkVar(v.identifier());
+            String newId = identifiers.putVar(v.identifier(), true);
+            return new Ast.VarParam(v.type(), newId);
+        } else {
+            return param;
+        }
     }
 
 
@@ -58,6 +96,21 @@ class Resolver {
             case Ast.ExpFactor e -> new Ast.ExpFactor(resolveExp(e.exp()));
             case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(u.factor()));
             case Ast.IntConstantFactor f -> f;
+            case Ast.FunctionCall call -> {
+                identifiers.checkFunCall(call.identifier());
+                Identifiers.Entry id = identifiers.funMap.get(call.identifier());
+                //check params
+                if (id.functionDeclare().realParamSize() != call.args().size()) {
+                    yield fail(String.format("function call need %d args, but only provide %d.",
+                            id.functionDeclare().realParamSize(),
+                            call.args().size()));
+                }
+
+                yield new Ast.FunctionCall(
+                        call.identifier(),
+                        call.args().stream().map(this::resolveExp).toList()
+                );
+            }
             default -> throw new SemanticException("Unsupported " + factor);
         };
     }
@@ -74,7 +127,7 @@ class Resolver {
             }
             case Ast.Var v -> {
                 String rawId = v.identifier();
-                String existReplacement = variables.mappingToReplacement(rawId);
+                String existReplacement = identifiers.mappingToReplacement(rawId);
                 if (existReplacement != null) {
                     yield new Ast.Var(existReplacement);
                 } else {
@@ -107,12 +160,12 @@ class Resolver {
                     resolveStatement(s.then()),
                     resolveStatement(s.elseSt()));
             case Ast.Compound c -> {
-                this.variables = this.variables.newScope();
+                this.identifiers = this.identifiers.newScope();
                 List<AstNode.BlockItem> list = c.block().blockItems()
                         .stream().map(s -> resolveBlockItem(s))
                         .collect(Collectors.toList());
                 var cp = new Ast.Compound(new Ast.Block(list));
-                this.variables = this.variables.parent;
+                this.identifiers = this.identifiers.parent;
                 yield cp;
             }
             case Ast.While w -> new Ast.While(resolveExp(w.condition()),
@@ -124,7 +177,7 @@ class Resolver {
             case Ast.BreakLabel l -> l;
             case Ast.ContinueLabel l -> l;
             case Ast.For f -> {
-                this.variables = this.variables.newScope();
+                this.identifiers = this.identifiers.newScope();
 
                 var rf = new Ast.For(
                         resolveForInit(f.init()),
@@ -132,7 +185,7 @@ class Resolver {
                         resolveExp(f.post()),
                         resolveStatement(f.body())
                 );
-                this.variables = this.variables.parent;
+                this.identifiers = this.identifiers.parent;
 
                 yield rf;
             }
@@ -145,7 +198,6 @@ class Resolver {
             case null -> null;
             case Ast.Break it -> {
                 if (this.currentLabel.noLabel()) {
-                    //fixme parser pos is at end!
                     throw new SemanticException("break statement outside of loop!");
                 }
                 yield new Ast.AnnotationLabeledStatement(it, this.currentLabel.labelValue);
@@ -204,5 +256,9 @@ class Resolver {
             case Ast.ForInitExp e -> new Ast.ForInitExp(resolveExp(e.exp()));
             default -> throw new SemanticException("unsupported init " + init.toString());
         };
+    }
+
+    private <T> T fail(String msg) {
+        throw new SemanticException(msg);
     }
 }

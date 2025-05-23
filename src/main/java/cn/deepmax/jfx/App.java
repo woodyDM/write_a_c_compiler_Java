@@ -8,7 +8,7 @@ import cn.deepmax.jfx.ir.IRConverter;
 import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
-import cn.deepmax.jfx.parse.Variables;
+import cn.deepmax.jfx.parse.Identifiers;
 import cn.deepmax.jfx.utils.ProcessRunner;
 
 import java.io.IOException;
@@ -23,14 +23,16 @@ public class App {
                     
                     int fib(int a);
                     
-                    int multiply_many_args(int a, int b, int c, int d, int e, int f, int g, int h);
+                    int multiply_many_args(int a, int b, int c, int d, int e, int f, int g, int h){
+                        return a+b;
+                    }
                     
                     int main(void) {
                         int x = fib(4);  
                     
                         int seven = 7;
                         int eight = fib(6);
-                        int y = multiply_many_args(x, 2, 3, 4, 5, 6, seven, eight);
+                        int y = multiply_many_args(x, 2, 3, 4, 5, 6, seven,x);
                         if (x != 3) {
                             return 1;
                         }
@@ -126,7 +128,7 @@ public class App {
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
         System.out.println("--------- asm ast ---------");
         System.out.println(asmAst);
-        System.out.printf("-----current variable id = [%d] -------\n", Variables.currentNumber());
+        System.out.printf("-----current variable id = [%d] -------\n", Identifiers.currentNumber());
 
         String asmCode = Emission.codegen(asmAst);
         System.out.println("---- asm -------");

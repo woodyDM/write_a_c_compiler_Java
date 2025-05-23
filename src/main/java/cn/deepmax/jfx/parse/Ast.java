@@ -63,9 +63,6 @@ public class Ast {
 
     }
 
-    public record VoidParam() implements AstNode.Param {
-    }
-
     public record VarParam(String type, @Nullable String identifier) implements AstNode.Param {
     }
 
@@ -83,6 +80,13 @@ public class Ast {
     public record FunctionDeclare(String identifier, List<AstNode.Param> params, @Nullable Block body)
             implements AstNode.Declaration {
 
+        public boolean sameParamDef(FunctionDeclare other) {
+            return other.realParamSize() == this.realParamSize();
+        }
+
+        public int realParamSize() {
+            return params.size();
+        }
     }
 
     public record ReturnStatement(AstNode.Exp exp)

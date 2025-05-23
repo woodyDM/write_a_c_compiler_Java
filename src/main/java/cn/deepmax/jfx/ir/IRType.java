@@ -1,6 +1,6 @@
 package cn.deepmax.jfx.ir;
 
-import cn.deepmax.jfx.parse.Variables;
+import cn.deepmax.jfx.parse.Identifiers;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,7 +30,7 @@ public class IRType {
         }
 
         private static String makeTempVarName() {
-            return "var." + Variables.nextId();
+            return "var." + Identifiers.nextId();
         }
     }
 
