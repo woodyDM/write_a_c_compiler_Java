@@ -22,9 +22,9 @@ public class AsmAst {
 
     public AssemblyConstruct.Program transform() {
         var pg = (IRType.Program) this.program;
-        var fn = transFunc(pg.functionDef());
-        Asm.AsmProgram p = new Asm.AsmProgram(fn);
-        return p;
+
+//        Asm.AsmProgram p = new Asm.AsmProgram(irFunc);
+        return null;
     }
 
     private AssemblyConstruct.FunctionDef transFunc(IR.FunctionDef functionDef) {

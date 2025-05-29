@@ -4,7 +4,7 @@ public interface IR {
     interface Program {
     }
 
-    interface FunctionDef {
+    sealed interface FunctionDef permits IRType.FunctionDef {
     }
 
     interface Instruction {

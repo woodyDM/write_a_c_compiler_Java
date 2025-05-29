@@ -17,14 +17,24 @@ public class IRConverter {
     }
 
     public IR.Program convertToIR() {
-        return new IRType.Program(convertFn());
+        Ast.AstProgram p = (Ast.AstProgram) program;
+        List<IR.FunctionDef> result = new ArrayList<>();
+        for (Ast.FunctionDeclare fn : p.functionDeclarations()) {
+            IR.FunctionDef irDef = convertFn(fn);
+            if (irDef != null) {
+                result.add(irDef);
+            }
+        }
+        return new IRType.Program(result);
     }
 
-    private IR.FunctionDef convertFn() {
-        var fn = ((Ast.AstProgram) program).functionDeclarations();
-//        List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
-//        return new IRType.FunctionDef(fn.name(), instructions);
-        return null;
+    private IR.FunctionDef convertFn(Ast.FunctionDeclare fn) {
+        if (fn.body() == null) {
+            return null;
+        }
+        List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
+        //todo?
+        return new IRType.FunctionDef(fn.identifier(), null, instructions);
     }
 
     private List<IR.Instruction> convertBlockItems(List<AstNode.BlockItem> itemList) {
@@ -40,8 +50,16 @@ public class IRConverter {
     private void convertBlockItem(AstNode.BlockItem blockItem, List<IR.Instruction> list) {
         switch (blockItem) {
             case Ast.DeclareBlockItem d -> {
-                Ast.VarDeclare statement = (Ast.VarDeclare) d.statement();
-                convertDeclare(statement, list);
+                switch (d.statement()) {
+                    case Ast.VarDeclare st -> {
+                        Ast.VarDeclare statement = (Ast.VarDeclare) d.statement();
+                        convertDeclare(statement, list);
+                    }
+                    case Ast.FunctionDeclare st -> {
+                        //ignore since we can't define function in block.
+                    }
+                }
+
             }
             case Ast.StatementBlockItem stmt -> {
                 convertStatement(stmt.statement(), list);
@@ -165,6 +183,7 @@ public class IRConverter {
      */
     private IR.Val convertValue(AstNode.Exp exp, List<IR.Instruction> list) {
         return switch (exp) {
+            //convert factor here
             case Ast.FactorExp f -> switch (f.factor()) {
                 case Ast.IntConstantFactor i -> new IRType.Constant(i.value());
                 case Ast.Unary u -> {
@@ -175,6 +194,20 @@ public class IRConverter {
                     yield dst;
                 }
                 case Ast.ExpFactor e -> convertValue(e.exp(), list);
+                case Ast.FunctionCall call -> {
+                    List<IR.Val> params = new ArrayList<>();
+                    for (AstNode.Exp arg : call.args()) {
+                        params.add(convertValue(arg, list));
+                    }
+                    var dst = IRType.Var.makeTemp();
+                    var ins = new IRType.FunCall(
+                            call.identifier(),
+                            params,
+                            dst
+                    );
+                    list.add(ins);
+                    yield dst;
+                }
                 default -> throw new UnsupportedOperationException("invalid factor " + f.factor().toString());
             };
             case Ast.Binary b -> {

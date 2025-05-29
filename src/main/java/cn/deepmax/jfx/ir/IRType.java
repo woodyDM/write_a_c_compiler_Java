@@ -58,16 +58,21 @@ public class IRType {
 
     public record Label(String identifier) implements IR.Instruction {
         public static AtomicInteger id = new AtomicInteger(0);
-        public static int nextId(){
+
+        public static int nextId() {
             return id.getAndIncrement();
         }
     }
 
+    public record FunCall(String functionName, List<IR.Val> args, IR.Val dst) implements IR.Instruction {
 
-    public record FunctionDef(String identifier, List<IR.Instruction> body) implements IR.FunctionDef {
     }
 
-    public record Program(IR.FunctionDef functionDef) implements IR.Program {
+    public record FunctionDef(String identifier, List<String> params,
+                              List<IR.Instruction> body) implements IR.FunctionDef {
+    }
+
+    public record Program(List<IR.FunctionDef> functionDef) implements IR.Program {
 
     }
 
