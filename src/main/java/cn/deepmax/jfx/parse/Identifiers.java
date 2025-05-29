@@ -48,6 +48,10 @@ public class Identifiers {
     }
 
     public void putFunc(String identifier, Ast.FunctionDeclare fn) {
+        VarEntry varEntry = varMap.get(identifier);
+        if (varEntry != null && varEntry.currentScope) {
+            throw new SemanticException("Variable redeclared as function!" + identifier);
+        }
         funMap.put(identifier, new Entry(true, true, fn));
     }
 
@@ -57,6 +61,14 @@ public class Identifiers {
         varMap.forEach((k, v) -> r.varMap.put(k, new VarEntry(v.replacedName, false)));
         r.parent = this;
         return r;
+    }
+
+    public void checkFunCallName(String identifier) {
+
+        var en = varMap.get(identifier);
+        if (en != null && en.currentScope) {
+            throw new SemanticException("Variable used as function name " + identifier);
+        }
     }
 
     public record VarEntry(String replacedName, boolean currentScope) {

@@ -24,6 +24,7 @@ class ResolverCh9Test {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
             new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Undeclared variable"), ex.getMessage());
     }
@@ -47,7 +48,7 @@ class ResolverCh9Test {
             new TypeChecker().checkProgram(ast);
 
         }, "should throw");
-        assertTrue(ex.getMessage().startsWith("Can't call on undeclared function"), ex.getMessage());
+        assertTrue(ex.getMessage().startsWith("Variable used as function name"), ex.getMessage());
     }
 
     @Test
@@ -88,6 +89,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         });
     }
 
@@ -106,6 +109,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         });
     }
 
@@ -141,6 +146,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         });
     }
 
@@ -161,6 +168,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
 
         });
     }
@@ -180,6 +189,8 @@ class ResolverCh9Test {
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -202,6 +213,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should not throw");
 
     }
@@ -221,6 +234,8 @@ class ResolverCh9Test {
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Id redeclared as different kind of symbol!"), ex.getMessage());
     }
@@ -241,6 +256,8 @@ class ResolverCh9Test {
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -262,6 +279,8 @@ class ResolverCh9Test {
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -302,6 +321,8 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         });
     }
 
@@ -321,7 +342,88 @@ class ResolverCh9Test {
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
             ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         });
     }
 
+    @Test
+    void should_error_when_call_variable_as_function() {
+        String input = """
+                int x(void);
+                
+                int main(void) {
+                    int x = 0;
+                
+                    return x();
+                }
+                """;
+        Lexer lexer = new Lexer(input);
+        Parser p = new Parser(lexer);
+
+        SemanticException ex = assertThrows(SemanticException.class, () -> {
+            Ast.AstProgram ast = p.parseProgram();
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
+        }, "should throw");
+        assertTrue(ex.getMessage().startsWith("Variable used as function name"), ex.getMessage());
+    }
+
+    @Test
+    void should_error_when_redefine_variable_as_function() {
+        String input = """
+                int main(void) {
+                
+                    int foo = 1;
+                    int foo(void);
+                    return foo;
+                }
+                
+                int foo(void) {
+                    return 1;
+                }
+                """;
+        Lexer lexer = new Lexer(input);
+        Parser p = new Parser(lexer);
+
+        SemanticException ex = assertThrows(SemanticException.class, () -> {
+            Ast.AstProgram ast = p.parseProgram();
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
+        }, "should throw");
+        assertTrue(ex.getMessage().startsWith("Variable redeclared as function!"), ex.getMessage());
+    }
+
+    @Test
+    void should_ok_when_function_shadow_variable() {
+        String input = """
+                int main(void) {
+                     int foo = 3;
+                     int bar = 4;
+                     if (foo + bar > 0) {
+                
+                         int foo(void);
+                         bar = foo();
+                     }
+                
+                     return foo + bar;
+                 }
+                
+                 int foo(void) {
+                     return 8;
+                 }
+                """;
+        Lexer lexer = new Lexer(input);
+        Parser p = new Parser(lexer);
+
+        assertDoesNotThrow(() -> {
+            Ast.AstProgram ast = p.parseProgram();
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
+        }, "should throw");
+
+    }
 }

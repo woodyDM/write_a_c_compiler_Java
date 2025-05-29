@@ -148,7 +148,9 @@ public class TypeChecker {
 
     private void checkStatement(AstNode.Statement statement) {
         switch (statement) {
-
+            case null-> {
+                return;
+            }
             case Ast.ReturnStatement r -> checkExp(r.exp());
             case Ast.Expression e -> checkExp(e.exp());
 

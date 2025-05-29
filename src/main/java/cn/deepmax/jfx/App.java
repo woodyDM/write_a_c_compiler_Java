@@ -9,6 +9,7 @@ import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
 import cn.deepmax.jfx.parse.Identifiers;
+import cn.deepmax.jfx.parse.TypeChecker;
 import cn.deepmax.jfx.utils.ProcessRunner;
 
 import java.io.IOException;
@@ -76,6 +77,7 @@ public class App {
         if ("--parse".equals(level)) return;
 
         astProgram = p.resolver.resolveProgram(astProgram);
+        new TypeChecker().checkProgram(astProgram);
         if ("--validate".equals(level)) return;
 
         IRConverter irConverter = new IRConverter(astProgram);
@@ -117,6 +119,7 @@ public class App {
         System.out.println(ast.toString());
         System.out.println("--------- resovle(validate) ---------");
         ast = p.resolver.resolveProgram(ast);
+        new TypeChecker().checkProgram(ast);
         System.out.println(ast.toString());
 
 

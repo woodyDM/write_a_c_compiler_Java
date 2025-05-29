@@ -73,8 +73,6 @@ public class Resolver {
     }
 
     private AstNode.Declaration resolveFunctionDeclaration(Ast.FunctionDeclare f) {
-        var exist = identifiers.funMap.get(f.identifier());
-
         identifiers.putFunc(f.identifier(), f);
         this.identifiers = this.identifiers.newScope();
         List<AstNode.Param> resolvedParams = f.params().stream()
@@ -102,6 +100,7 @@ public class Resolver {
             case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(u.factor()));
             case Ast.IntConstantFactor f -> f;
             case Ast.FunctionCall call -> {
+                identifiers.checkFunCallName(call.identifier());
                 yield new Ast.FunctionCall(
                         call.identifier(),
                         call.args().stream().map(this::resolveExp).toList()
