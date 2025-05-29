@@ -75,7 +75,7 @@ public class App {
         Ast.AstProgram astProgram = p.parseProgram();
         if ("--parse".equals(level)) return;
 
-        astProgram = p.resolveProgram(astProgram);
+        astProgram = p.resolver.resolveProgram(astProgram);
         if ("--validate".equals(level)) return;
 
         IRConverter irConverter = new IRConverter(astProgram);
@@ -116,7 +116,7 @@ public class App {
         System.out.println("--------- parser ---------");
         System.out.println(ast.toString());
         System.out.println("--------- resovle(validate) ---------");
-        ast = p.resolveProgram(ast);
+        ast = p.resolver.resolveProgram(ast);
         System.out.println(ast.toString());
 
 

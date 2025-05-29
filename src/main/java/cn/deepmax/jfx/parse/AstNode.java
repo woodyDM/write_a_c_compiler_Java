@@ -23,7 +23,7 @@ public interface AstNode {
     interface Statement {
     }
 
-    interface Declaration {
+    sealed interface Declaration permits Ast.FunctionDeclare, Ast.VarDeclare {
     }
 
     interface Exp {
@@ -33,7 +33,7 @@ public interface AstNode {
 
     }
 
-    interface ForInit {
+    sealed interface ForInit permits Ast.ForInitDeclare, Ast.ForInitExp {
 
     }
 

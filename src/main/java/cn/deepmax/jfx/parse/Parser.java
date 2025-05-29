@@ -15,7 +15,7 @@ public class Parser {
     int pos = 0;
     private final int len;
 
-    private Resolver resolver = new Resolver();
+    public final Resolver resolver = new Resolver();
     private Token currentLine;
 
     public Parser(Lexer lexer) {
@@ -29,14 +29,6 @@ public class Parser {
 
         expect(TokenType.EOF, NoneParams.NONE);
         return p;
-    }
-
-    public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
-        List<Ast.FunctionDeclare> list = program.functionDeclarations()
-                .stream()
-                .map(f -> resolver.resolveFunctionDeclare(f))
-                .toList();
-        return new Ast.AstProgram(list);
     }
 
     public List<Ast.FunctionDeclare> parseFunctionDeclarationList() {

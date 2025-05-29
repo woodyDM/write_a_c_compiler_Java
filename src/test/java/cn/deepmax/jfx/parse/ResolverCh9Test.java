@@ -22,9 +22,10 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
         }, "should throw");
-        assertTrue(ex.getMessage().startsWith("Can't call on undeclared function"), ex.getMessage());
+        assertTrue(ex.getMessage().startsWith("Undeclared variable"), ex.getMessage());
     }
 
     @Test
@@ -40,12 +41,13 @@ class ResolverCh9Test {
         Lexer lexer = new Lexer(input);
         Parser p = new Parser(lexer);
 
-
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
-        assertTrue(ex.getMessage().startsWith("Can't do function call on var"), ex.getMessage());
+        assertTrue(ex.getMessage().startsWith("Can't call on undeclared function"), ex.getMessage());
     }
 
     @Test
@@ -63,7 +65,9 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("function call need 2 args, but only provide 1"), ex.getMessage());
     }
@@ -83,7 +87,7 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         });
     }
 
@@ -101,22 +105,23 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         });
     }
+
     @Test
     void should_ok_complex_program() {
         String input = """
-                           
+                
                     int fib(int a);
-                    
+                
                     int multiply_many_args(int a, int b, int c, int d, int e, int f, int g, int h){
                         return a+b;
                     }
-                    
+                
                     int main(void) {
                         int x = fib(4);  
-                    
+                
                         int seven = 7;
                         int eight = fib(6);
                         int y = multiply_many_args(x, 2, 3, 4, 5, 6, seven,x);
@@ -128,14 +133,14 @@ class ResolverCh9Test {
                         }
                         return x / (y % 256);
                     }
-                    
+                
                 """;
         Lexer lexer = new Lexer(input);
         Parser p = new Parser(lexer);
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         });
     }
 
@@ -155,7 +160,7 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
 
         });
     }
@@ -174,7 +179,7 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -196,7 +201,7 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         }, "should not throw");
 
     }
@@ -215,7 +220,7 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Id redeclared as different kind of symbol!"), ex.getMessage());
     }
@@ -235,7 +240,7 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -256,7 +261,7 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("Duplicate variable declaration!"), ex.getMessage());
     }
@@ -275,7 +280,9 @@ class ResolverCh9Test {
 
         SemanticException ex = assertThrows(SemanticException.class, () -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
+            new TypeChecker().checkProgram(ast);
+
         }, "should throw");
         assertTrue(ex.getMessage().startsWith("declaration is incompatible with previous"), ex.getMessage());
     }
@@ -294,14 +301,14 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         });
     }
 
     @Test
     void should_no_error_when_fun_def_same_multi_times_2() {
         String input = """
-                  
+                
                   int main(void){
                       int bb(int a,int b);
                       int bb(int a,int b);
@@ -313,7 +320,7 @@ class ResolverCh9Test {
 
         assertDoesNotThrow(() -> {
             Ast.AstProgram ast = p.parseProgram();
-            ast = p.resolveProgram(ast);
+            ast = p.resolver.resolveProgram(ast);
         });
     }
 

@@ -8,16 +8,30 @@ import java.util.stream.Collectors;
 /**
  * semantic resolve
  */
-class Resolver {
+public class Resolver {
 
     private Identifiers identifiers = new Identifiers();
     private Labels currentLabel = new Labels();
 
-    Ast.FunctionDeclare resolveFunctionDeclare(Ast.FunctionDeclare fun) {
+    /**
+     * resolve program
+     *
+     * @param program
+     * @return
+     */
+    public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
+        List<Ast.FunctionDeclare> list = program.functionDeclarations()
+                .stream()
+                .map(f -> resolveFunctionDeclare(f))
+                .toList();
+        return new Ast.AstProgram(list);
+    }
+
+    private Ast.FunctionDeclare resolveFunctionDeclare(Ast.FunctionDeclare fun) {
         return (Ast.FunctionDeclare) resolveFunctionDeclaration(fun);
     }
 
-    Ast.Block resolveBlock(Ast.Block block) {
+    private Ast.Block resolveBlock(Ast.Block block) {
         if (block == null) {
             return null;
         }
@@ -29,7 +43,7 @@ class Resolver {
         return new Ast.Block(list);
     }
 
-    AstNode.BlockItem resolveBlockItem(AstNode.BlockItem item) {
+    private AstNode.BlockItem resolveBlockItem(AstNode.BlockItem item) {
         return switch (item) {
             case Ast.DeclareBlockItem d -> new Ast.DeclareBlockItem(resolveDeclaration(d.statement()));
             case Ast.StatementBlockItem i -> new Ast.StatementBlockItem(resolveStatement(i.statement()));
@@ -37,7 +51,7 @@ class Resolver {
         };
     }
 
-    AstNode.BlockItem labelBlockItem(AstNode.BlockItem item) {
+    private AstNode.BlockItem labelBlockItem(AstNode.BlockItem item) {
         return switch (item) {
             case Ast.DeclareBlockItem d -> d;
             case Ast.StatementBlockItem i -> new Ast.StatementBlockItem(labelStatement(i.statement()));
@@ -46,7 +60,7 @@ class Resolver {
     }
 
 
-    AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
+    private AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
         return switch (declaration) {
             case Ast.VarDeclare d -> {
                 var idValue = d.identifier();
@@ -55,21 +69,12 @@ class Resolver {
                 yield new Ast.VarDeclare(replacedName, resolveExp(d.exp()));
             }
             case Ast.FunctionDeclare f -> resolveFunctionDeclaration(f);
-            default -> fail("unsupported " + declaration);
         };
-
     }
 
     private AstNode.Declaration resolveFunctionDeclaration(Ast.FunctionDeclare f) {
         var exist = identifiers.funMap.get(f.identifier());
-        if (exist != null) {
-            if (exist.currentScope() && !exist.hasLinkage()) {
-                return fail("Duplicate declaration of function " + f.identifier());
-            }
-            if (!exist.functionDeclare().sameParamDef(f)) {
-                return fail("declaration is incompatible with previous :" + f.identifier());
-            }
-        }
+
         identifiers.putFunc(f.identifier(), f);
         this.identifiers = this.identifiers.newScope();
         List<AstNode.Param> resolvedParams = f.params().stream()
@@ -91,21 +96,12 @@ class Resolver {
     }
 
 
-    AstNode.Factor resolveFactor(AstNode.Factor factor) {
+    private AstNode.Factor resolveFactor(AstNode.Factor factor) {
         return switch (factor) {
             case Ast.ExpFactor e -> new Ast.ExpFactor(resolveExp(e.exp()));
             case Ast.Unary u -> new Ast.Unary(u.operator(), resolveFactor(u.factor()));
             case Ast.IntConstantFactor f -> f;
             case Ast.FunctionCall call -> {
-                identifiers.checkFunCall(call.identifier());
-                Identifiers.Entry id = identifiers.funMap.get(call.identifier());
-                //check params
-                if (id.functionDeclare().realParamSize() != call.args().size()) {
-                    yield fail(String.format("function call need %d args, but only provide %d.",
-                            id.functionDeclare().realParamSize(),
-                            call.args().size()));
-                }
-
                 yield new Ast.FunctionCall(
                         call.identifier(),
                         call.args().stream().map(this::resolveExp).toList()
@@ -115,7 +111,7 @@ class Resolver {
         };
     }
 
-    AstNode.Exp resolveExp(AstNode.Exp exp) {
+    private AstNode.Exp resolveExp(AstNode.Exp exp) {
         return switch (exp) {
             case null -> null; //for declare
             case Ast.Assignment it -> {
@@ -150,7 +146,7 @@ class Resolver {
     }
 
 
-    AstNode.Statement resolveStatement(AstNode.Statement statement) {
+    private AstNode.Statement resolveStatement(AstNode.Statement statement) {
         return switch (statement) {
             case null -> null;
             case Ast.ReturnStatement r -> new Ast.ReturnStatement(resolveExp(r.exp()));
@@ -193,7 +189,7 @@ class Resolver {
         };
     }
 
-    AstNode.Statement labelStatement(AstNode.Statement statement) {
+    private AstNode.Statement labelStatement(AstNode.Statement statement) {
         return switch (statement) {
             case null -> null;
             case Ast.Break it -> {
@@ -248,17 +244,18 @@ class Resolver {
         };
     }
 
-    AstNode.ForInit resolveForInit(AstNode.ForInit init) {
+    private AstNode.ForInit resolveForInit(AstNode.ForInit init) {
         return switch (init) {
             case Ast.ForInitDeclare d -> new Ast.ForInitDeclare(
                     resolveDeclaration(d.declaration())
             );
             case Ast.ForInitExp e -> new Ast.ForInitExp(resolveExp(e.exp()));
-            default -> throw new SemanticException("unsupported init " + init.toString());
         };
     }
 
     private <T> T fail(String msg) {
         throw new SemanticException(msg);
     }
+
+
 }

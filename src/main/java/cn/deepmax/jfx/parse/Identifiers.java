@@ -28,18 +28,6 @@ public class Identifiers {
         }
     }
 
-    public void checkFunCall(String id) {
-        var varEn = varMap.get(id);
-        if (varEn != null) {
-            throw new SemanticException("Can't do function call on var " + id);
-        }
-        Entry entry = funMap.get(id);
-        if (entry == null) {
-            throw new SemanticException("Can't call on undeclared function:" + id);
-        }
-
-    }
-
     public static int currentNumber() {
         return (int) seq.get();
     }
