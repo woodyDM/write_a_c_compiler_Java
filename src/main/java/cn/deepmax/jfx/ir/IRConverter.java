@@ -4,6 +4,7 @@ import cn.deepmax.jfx.exception.SemanticException;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.AstNode;
 import cn.deepmax.jfx.parse.Labels;
+import cn.deepmax.jfx.parse.TypeChecker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +12,11 @@ import java.util.List;
 public class IRConverter {
 
     private AstNode.Program program;
+    private final TypeChecker typeChecker;
 
-    public IRConverter(AstNode.Program program) {
+    public IRConverter(AstNode.Program program, TypeChecker typeChecker) {
         this.program = program;
+        this.typeChecker = typeChecker;
     }
 
     public IR.Program convertToIR() {

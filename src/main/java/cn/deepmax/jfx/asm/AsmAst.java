@@ -3,6 +3,7 @@ package cn.deepmax.jfx.asm;
 import cn.deepmax.jfx.ir.IR;
 import cn.deepmax.jfx.ir.IRType;
 import cn.deepmax.jfx.parse.Identifiers;
+import cn.deepmax.jfx.parse.TypeChecker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,13 +11,16 @@ import java.util.List;
 public class AsmAst {
 
     private IR.Program program;
+    private final TypeChecker typeChecker;
+    private Asm.PseudoContext pseudoContext;
 
-    private AsmAst(IR.Program program) {
+    private AsmAst(IR.Program program, TypeChecker typeChecker) {
         this.program = program;
+        this.typeChecker = typeChecker;
     }
 
-    public static AssemblyConstruct.Program createAsmAst(IR.Program program) {
-        return new AsmAst(program).transform();
+    public static AssemblyConstruct.Program createAsmAst(IR.Program program, TypeChecker typeChecker) {
+        return new AsmAst(program, typeChecker).transform();
     }
 
     public AssemblyConstruct.Program transform() {
@@ -28,18 +32,29 @@ public class AsmAst {
     }
 
     private AssemblyConstruct.FunctionDef transFunc(IR.FunctionDef functionDef) {
+        this.pseudoContext = new Asm.PseudoContext();
         var fn = (IRType.FunctionDef) functionDef;
-        long varBase = Asm.Pseudo.seq.get();
-        //params copy
         List<AssemblyConstruct.Instruction> allIns = new ArrayList<>();
+        allIns.add(null); //for AllocateStack
+        var params = ((IRType.FunctionDef) functionDef).params();
+
+        //params copy
+        long varBase = Asm.Pseudo.seq.get();
+        var paramSize = params.size();
+        if (paramSize >= 1) allIns.add(new Asm.Mov(Asm.Register.DI, pseudoContext.make(params.get(0))));
+        if (paramSize >= 2) allIns.add(new Asm.Mov(Asm.Register.SI, pseudoContext.make(params.get(1))));
+        if (paramSize >= 3) allIns.add(new Asm.Mov(Asm.Register.DX, pseudoContext.make(params.get(2))));
+        if (paramSize >= 4) allIns.add(new Asm.Mov(Asm.Register.CX, pseudoContext.make(params.get(3))));
+        if (paramSize >= 5) allIns.add(new Asm.Mov(Asm.Register.R8D, pseudoContext.make(params.get(4))));
+        if (paramSize >= 6) allIns.add(new Asm.Mov(Asm.Register.R9D, pseudoContext.make(params.get(5))));
+        for (int i = 6; i < paramSize; i++) {
+            //copy on stack
+            int offset = 16 + (i - 6) * 8;
+            allIns.addAll(Asm.Mov.makeMove(new Asm.Stack(-offset), pseudoContext.make(params.get(i))));
+        }
         var bodyInstruction = transInstruction(fn.body());
         long varNumber = Asm.Pseudo.seq.get() - varBase;
-
-        var params = ((IRType.FunctionDef) functionDef).params();
-        int paramSize = fn.params().size();
-        allIns.add(new Asm.AllocateStack((varNumber + paramSize) * 4));
-        if (varNumber >= 1) allIns.add(new Asm.Mov(Asm.Register.DX, Asm.Pseudo.make(params.get(0))));
-
+        allIns.set(0, new Asm.AllocateStack(varNumber * 4));
         Asm.Function function = new Asm.Function(fn.identifier(), paramSize, varBase, varNumber, bodyInstruction);
         return function;
     }
@@ -154,7 +169,7 @@ public class AsmAst {
     private AssemblyConstruct.Operand transOperand(IR.Val exp) {
         return switch (exp) {
             case IRType.Constant c -> new Asm.Imm(c.v());
-            case IRType.Var v -> Asm.Pseudo.make(v.identifier());
+            case IRType.Var v -> this.pseudoContext.make(v.identifier());
             default -> throw new UnsupportedOperationException(exp.toString());
         };
     }

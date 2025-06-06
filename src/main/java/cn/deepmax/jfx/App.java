@@ -77,14 +77,15 @@ public class App {
         if ("--parse".equals(level)) return;
 
         astProgram = p.resolver.resolveProgram(astProgram);
-        new TypeChecker().checkProgram(astProgram);
+        TypeChecker typeChecker = new TypeChecker();
+        typeChecker.checkProgram(astProgram);
         if ("--validate".equals(level)) return;
 
-        IRConverter irConverter = new IRConverter(astProgram);
+        IRConverter irConverter = new IRConverter(astProgram, typeChecker);
         IR.Program irProgram = irConverter.convertToIR();
         if ("--tacky".equals(level)) return;
 
-        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
+        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram, typeChecker);
         if ("--codegen".equals(level)) return;
         String asmCode = Emission.codegen(asmAst);
 
@@ -119,16 +120,17 @@ public class App {
         System.out.println(ast.toString());
         System.out.println("--------- resovle(validate) ---------");
         ast = p.resolver.resolveProgram(ast);
-        new TypeChecker().checkProgram(ast);
+        TypeChecker typeChecker = new TypeChecker();
+        typeChecker.checkProgram(ast);
         System.out.println(ast.toString());
 
 
-        IRConverter irConverter = new IRConverter(ast);
+        IRConverter irConverter = new IRConverter(ast, typeChecker);
         IR.Program irProgram = irConverter.convertToIR();
         System.out.println("--------- ir ---------");
         System.out.println(irProgram.toString());
 
-        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
+        AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram, typeChecker);
         System.out.println("--------- asm ast ---------");
         System.out.println(asmAst);
         System.out.printf("-----current variable   -------\n");

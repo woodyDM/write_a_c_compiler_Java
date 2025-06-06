@@ -9,6 +9,10 @@ public class TypeChecker {
 
     private final SymbolTable table = new SymbolTable();
 
+    public SymbolTable symbolTable() {
+        return table;
+    }
+
     /**
      * check program
      *
@@ -24,24 +28,24 @@ public class TypeChecker {
         checkFunctionDeclaration(fun);
     }
 
-    private void checkBlock(Ast.Block block) {
+    private void checkBlock(String funIdentifier, Ast.Block block) {
         Objects.requireNonNull(block);
-        block.blockItems().forEach(bkitem -> checkBlockItem(bkitem));
+        block.blockItems().forEach(bkitem -> checkBlockItem(funIdentifier, bkitem));
     }
 
-    private void checkBlockItem(AstNode.BlockItem item) {
+    private void checkBlockItem(String funIdentifier, AstNode.BlockItem item) {
         switch (item) {
-            case Ast.DeclareBlockItem d -> checkDeclaration(d.statement());
-            case Ast.StatementBlockItem i -> checkStatement(i.statement());
+            case Ast.DeclareBlockItem d -> checkDeclaration(funIdentifier, d.statement());
+            case Ast.StatementBlockItem i -> checkStatement(funIdentifier, i.statement());
             default -> throw new SemanticException("unsupported item " + item.toString());
         }
     }
 
-    private void checkDeclaration(AstNode.Declaration declaration) {
+    private void checkDeclaration(String funIdentifier, AstNode.Declaration declaration) {
         switch (declaration) {
             case Ast.VarDeclare d -> {
                 var idValue = d.identifier();
-                table.put(idValue, TypeDef.VariableType.Int);
+                table.putVariable(funIdentifier, idValue, TypeDef.VariableType.Int);
                 checkExp(d.exp());
             }
             case Ast.FunctionDeclare f -> checkFunctionDeclaration(f);
@@ -58,28 +62,27 @@ public class TypeChecker {
             if (!(exist instanceof TypeDef.FunType oldDef)) {
                 throw new SemanticException("declaration is incompatible with previous :" + f.identifier());
             }
-            if (oldDef.paramCount() != f.realParamSize()) {
+            if (oldDef.paramCount != f.realParamSize()) {
                 throw new SemanticException("declaration is incompatible with previous :" + f.identifier());
             }
-            alreadyDefined = oldDef.defined();
+            alreadyDefined = oldDef.defined;
             if (alreadyDefined && hasBody) {
                 throw new SemanticException("Duplicate declaration of function " + f.identifier());
             }
         }
-        table.put(f.identifier(), new TypeDef.FunType(f.realParamSize(), hasBody || alreadyDefined));
+        table.put(f.identifier(), TypeDef.FunType.newInstanceFrom(f.realParamSize(), hasBody || alreadyDefined, exist));
         if (hasBody) {
             f.params().forEach(p -> {
                 if (p instanceof Ast.VarParam vp) {
-                    table.put(vp.identifier(), TypeDef.VariableType.Int);
+                    table.putVariable(f.identifier(), vp.identifier(), TypeDef.VariableType.Int);
                 } else {
                     throw new SemanticException("invalid param");
                 }
             });
-            checkBlock(f.body());
+            checkBlock(f.identifier(), f.body());
         }
 
     }
-
 
     private void checkFactor(AstNode.Factor factor) {
         switch (factor) {
@@ -92,9 +95,9 @@ public class TypeChecker {
                     case null -> throw new SemanticException("Can't call on undeclared function:" + id);
                     case TypeDef.VariableType t -> throw new SemanticException("Can't do function call on var " + id);
                     case TypeDef.FunType f -> {
-                        if (f.paramCount() != call.args().size()) {
+                        if (f.paramCount != call.args().size()) {
                             throw new SemanticException(String.format("function call need %d args, but only provide %d.",
-                                    f.paramCount(),
+                                    f.paramCount,
                                     call.args().size()));
                         }
                         for (AstNode.Exp arg : call.args()) {
@@ -146,44 +149,43 @@ public class TypeChecker {
     }
 
 
-    private void checkStatement(AstNode.Statement statement) {
+    private void checkStatement(String funcIdentifier, AstNode.Statement statement) {
         switch (statement) {
-            case null-> {
+            case null -> {
                 return;
             }
             case Ast.ReturnStatement r -> checkExp(r.exp());
             case Ast.Expression e -> checkExp(e.exp());
 
             case Ast.If s -> {
-
                 checkExp(s.condition());
-                checkStatement(s.then());
-                checkStatement(s.elseSt());
+                checkStatement(funcIdentifier, s.then());
+                checkStatement(funcIdentifier, s.elseSt());
             }
-            case Ast.Compound c -> c.block().blockItems().forEach(s -> checkBlockItem(s));
+            case Ast.Compound c -> c.block().blockItems().forEach(s -> checkBlockItem(funcIdentifier, s));
             case Ast.While w -> {
                 checkExp(w.condition());
-                checkStatement(w.body());
+                checkStatement(funcIdentifier, w.body());
             }
             case Ast.DoWhile w -> {
-                checkStatement(w.body());
+                checkStatement(funcIdentifier, w.body());
                 checkExp(w.condition());
             }
 
             case Ast.For f -> {
-                checkForInit(f.init());
+                checkForInit(funcIdentifier, f.init());
                 checkExp(f.condition());
                 checkExp(f.post());
-                checkStatement(f.body());
+                checkStatement(funcIdentifier, f.body());
             }
             default -> {
             }
         }
     }
 
-    private void checkForInit(AstNode.ForInit init) {
+    private void checkForInit(String identifier, AstNode.ForInit init) {
         switch (init) {
-            case Ast.ForInitDeclare d -> checkDeclaration(d.declaration());
+            case Ast.ForInitDeclare d -> checkDeclaration(identifier, d.declaration());
             case Ast.ForInitExp e -> checkExp(e.exp());
         }
     }

@@ -1,7 +1,6 @@
 package cn.deepmax.jfx.asm;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
@@ -191,10 +190,26 @@ public class Asm {
     public record Stack(int pos) implements AssemblyConstruct.Operand {
     }
 
+    public static class PseudoContext {
+
+        private Map<String, String> mapping = new HashMap<>();
+
+        public Pseudo make(String varName) {
+            String old = mapping.get(varName);
+            if (old != null) {
+                return new Pseudo(old);
+            }
+            long id = Pseudo.seq.getAndIncrement();
+            String pName = varName + "." + id;
+            mapping.put(varName, pName);
+            return new Pseudo(pName);
+        }
+    }
+
     public record Pseudo(String id) implements AssemblyConstruct.Operand {
         public static final AtomicLong seq = new AtomicLong(0);
 
-        public static Pseudo make(String id) {
+        public static Pseudo make(String id, Set<String> varNamesSet) {
             seq.getAndIncrement();
             return new Pseudo(id);
         }
@@ -207,8 +222,13 @@ public class Asm {
     public record Register(AssemblyConstruct.Reg reg) implements AssemblyConstruct.Operand {
         public static final Register R10D = new Register(Registers.R10D);
         public static final Register R11D = new Register(Registers.R11D);
+        public static final Register R8D = new Register(Registers.R8D);
+        public static final Register R9D = new Register(Registers.R9D);
         public static final Register AX = new Register(Registers.AX);
+        public static final Register CX = new Register(Registers.CX);
         public static final Register DX = new Register(Registers.DX);
+        public static final Register DI = new Register(Registers.DI);
+        public static final Register SI = new Register(Registers.SI);
 
     }
 

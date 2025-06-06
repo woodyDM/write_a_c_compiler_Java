@@ -33,7 +33,8 @@ public class Emission {
     }
 
     private void genInstruction() {
-        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
+//        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
+        AssemblyConstruct.FunctionDef functionDef =null;
         Asm.Function fn = (Asm.Function) functionDef;
         List<AssemblyConstruct.Instruction> instructions = fn.instructions();
         for (AssemblyConstruct.Instruction it : instructions) {
@@ -153,7 +154,8 @@ public class Emission {
     }
 
     private void genFuncdef() {
-        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
+//        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
+        AssemblyConstruct.FunctionDef functionDef = null;
         Asm.Function fn = (Asm.Function) functionDef;
         sb.append("\t.globl ").append(fn.name()).append("\n")
                 .append(fn.name()).append(":\n");
