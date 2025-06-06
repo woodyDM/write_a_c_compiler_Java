@@ -38,14 +38,6 @@ public class IRType {
             return (int) (idOf(identifier) * 4);
         }
 
-        public int getStackOffset() {
-            return offset(this.identifier());
-        }
-
-        public static long currentId() {
-            return id.get();
-        }
-
         private static String makeTempVarName() {
             return "var." + id.getAndIncrement();
         }

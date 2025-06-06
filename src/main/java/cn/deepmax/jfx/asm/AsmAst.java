@@ -14,6 +14,15 @@ public class AsmAst {
     private final TypeChecker typeChecker;
     private Asm.PseudoContext pseudoContext;
 
+    final static Asm.Register[] PARAM = new Asm.Register[]{
+            Asm.Register.DI,
+            Asm.Register.SI,
+            Asm.Register.DX,
+            Asm.Register.CX,
+            Asm.Register.R8D,
+            Asm.Register.R9D
+    };
+
     private AsmAst(IR.Program program, TypeChecker typeChecker) {
         this.program = program;
         this.typeChecker = typeChecker;
@@ -39,30 +48,32 @@ public class AsmAst {
         var params = ((IRType.FunctionDef) functionDef).params();
 
         //params copy
-        long varBase = Asm.Pseudo.seq.get();
+
         var paramSize = params.size();
-        if (paramSize >= 1) allIns.add(new Asm.Mov(Asm.Register.DI, pseudoContext.make(params.get(0))));
-        if (paramSize >= 2) allIns.add(new Asm.Mov(Asm.Register.SI, pseudoContext.make(params.get(1))));
-        if (paramSize >= 3) allIns.add(new Asm.Mov(Asm.Register.DX, pseudoContext.make(params.get(2))));
-        if (paramSize >= 4) allIns.add(new Asm.Mov(Asm.Register.CX, pseudoContext.make(params.get(3))));
-        if (paramSize >= 5) allIns.add(new Asm.Mov(Asm.Register.R8D, pseudoContext.make(params.get(4))));
-        if (paramSize >= 6) allIns.add(new Asm.Mov(Asm.Register.R9D, pseudoContext.make(params.get(5))));
+        for (int i = 0; i < paramSize && i < 6; i++) {
+            allIns.add(new Asm.Mov(PARAM[i], pseudoContext.make(params.get(i))));
+        }
         for (int i = 6; i < paramSize; i++) {
             //copy on stack
             int offset = 16 + (i - 6) * 8;
             allIns.addAll(Asm.Mov.makeMove(new Asm.Stack(-offset), pseudoContext.make(params.get(i))));
         }
-        var bodyInstruction = transInstruction(fn.body());
-        long varNumber = Asm.Pseudo.seq.get() - varBase;
-        allIns.set(0, new Asm.AllocateStack(varNumber * 4));
-        Asm.Function function = new Asm.Function(fn.identifier(), paramSize, varBase, varNumber, bodyInstruction);
+        transInstruction(fn.body(), allIns);
+        long varNumber = this.pseudoContext.getPseudoCount();
+        allIns.set(0, new Asm.AllocateStack(get16AlignedStack(varNumber)));
+        Asm.Function function = new Asm.Function(fn.identifier(), paramSize, 0, varNumber, allIns);
         return function;
     }
 
-    private List<AssemblyConstruct.Instruction> transInstruction(List<IR.Instruction> body) {
-        List<AssemblyConstruct.Instruction> list = new ArrayList<>();
-        //first Allocate Stack
-        list.add(new Asm.AllocateStack(Identifiers.currentNumber() * 4));
+    private int get16AlignedStack(long varNumber) {
+        if (varNumber % 2 == 0) {
+            return (int) varNumber * 4;
+        } else {
+            return (int) (varNumber + 1) * 4;
+        }
+    }
+
+    private void transInstruction(List<IR.Instruction> body, List<AssemblyConstruct.Instruction> list) {
         for (IR.Instruction ir : body) {
             switch (ir) {
                 case IRType.Return ret -> {
@@ -130,11 +141,40 @@ public class AsmAst {
                             transOperand(copy.dst())
                     ));
                 }
+                case IRType.FunCall call -> {
+                    int paramSize = call.args().size();
+                    int stackPadding = paramSize % 2 != 0 ? 8 : 0;
+                    if (stackPadding != 0) {
+                        list.add(new Asm.AllocateStack(8)); //stackPadding
+                    }
+                    for (int i = 0; i < paramSize && i < 6; i++) {
+                        IR.Val val = call.args().get(i);
+                        var from = transOperand(val);
+                        var to = PARAM[i];
+                        list.addAll(Asm.Mov.makeMove(from, to));
+                    }
+                    for (int i = paramSize - 1; i >= 6; i--) {
+                        IR.Val val = call.args().get(i);
+                        var from = transOperand(val);
+                        if (from instanceof Asm.Register || from instanceof Asm.Imm) {
+                            list.add(new Asm.Push(from));
+                        } else {
+                            list.add(new Asm.Mov(from, Asm.Register.AX));
+                            list.add(new Asm.Push(Asm.Register.AX));
+                        }
+                    }
+                    list.add(new Asm.Call(call.functionName()));
+                    //adjust stack pointer
+                    int bytesToRemove = 8 * (paramSize - 6) * stackPadding;
+                    if (bytesToRemove != 0) {
+                        list.add(new Asm.DeallocateStack(bytesToRemove));
+                    }
+                    var result = transOperand(call.dst());
+                    list.add(new Asm.Mov(Asm.Register.AX, result));
+                }
                 default -> throw new UnsupportedOperationException(body.toString());
             }
         }
-
-        return list;
     }
 
     private AssemblyConstruct.BinaryOperator convertBinaryOp(IR.BinaryOperator op) {

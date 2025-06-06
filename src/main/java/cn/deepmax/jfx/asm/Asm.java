@@ -86,11 +86,15 @@ public class Asm {
         }
     }
 
+    private static boolean memoryAddress(AssemblyConstruct.Operand op) {
+        return op instanceof Stack || op instanceof Pseudo;
+    }
+
     public record Cmp(AssemblyConstruct.Operand left,
                       AssemblyConstruct.Operand right) implements AssemblyConstruct.Instruction {
         public static List<AssemblyConstruct.Instruction> make(AssemblyConstruct.Operand left,
                                                                AssemblyConstruct.Operand right) {
-            if (left instanceof Pseudo && right instanceof Pseudo) {
+            if (memoryAddress(left) && memoryAddress(right)) {
                 return List.of(
                         new Mov(left, Register.R10D),
                         new Cmp(Register.R10D, right)
@@ -123,7 +127,7 @@ public class Asm {
     public static <T> List<T> fixBothStack(AssemblyConstruct.Operand src,
                                            AssemblyConstruct.Operand dest,
                                            BiFunction<AssemblyConstruct.Operand, AssemblyConstruct.Operand, T> construct) {
-        if (src instanceof Pseudo && dest instanceof Pseudo) {
+        if (memoryAddress(src) && memoryAddress(dest)) {
             return List.of(
                     construct.apply(src, Register.R10D),
                     construct.apply(Register.R10D, dest)
@@ -156,15 +160,25 @@ public class Asm {
     }
 
     public enum Registers implements AssemblyConstruct.Reg {
-        AX,
-        CX,
-        DX,
-        DI,
-        SI,
-        R8D,
-        R9D,
-        R10D,
-        R11D
+        AX("al", "eax", "rax"),
+        DX("dl", "edx", "rdx"),
+        CX("cl", "ecx", "rcx"),
+        DI("dil", "edi", "rdi"),
+        SI("sil", "esi", "rsi"),
+        R8D("r8b", "r8d", "r8"),
+        R9D("r9b", "r9d", "r9"),
+        R10D("r10b", "r10d", "r10"),
+        R11D("r11b", "r11d", "r11");
+
+        public final String b1;
+        public final String b4;
+        public final String b8;
+
+        Registers(String b1, String b4, String b8) {
+            this.b1 = b1;
+            this.b4 = b4;
+            this.b8 = b8;
+        }
     }
 
     public enum BinaryOp implements AssemblyConstruct.BinaryOperator {
@@ -187,33 +201,40 @@ public class Asm {
         }
     }
 
+    /**
+     * @param pos neg position
+     */
     public record Stack(int pos) implements AssemblyConstruct.Operand {
     }
 
     public static class PseudoContext {
 
-        private Map<String, String> mapping = new HashMap<>();
+        private final AtomicLong seq = new AtomicLong(0);
+        private final Map<String, String> mapping = new HashMap<>();
 
         public Pseudo make(String varName) {
             String old = mapping.get(varName);
             if (old != null) {
                 return new Pseudo(old);
             }
-            long id = Pseudo.seq.getAndIncrement();
+            long id = seq.getAndIncrement();
             String pName = varName + "." + id;
             mapping.put(varName, pName);
             return new Pseudo(pName);
         }
+
+        public long getPseudoCount() {
+            return seq.get();
+        }
+
     }
 
     public record Pseudo(String id) implements AssemblyConstruct.Operand {
-        public static final AtomicLong seq = new AtomicLong(0);
 
-        public static Pseudo make(String id, Set<String> varNamesSet) {
-            seq.getAndIncrement();
-            return new Pseudo(id);
+        public int getOffset() {
+            String[] s = id.split("\\.");
+            return Integer.parseInt(s[s.length - 1]) * 4;
         }
-
     }
 
     public record Imm(int v) implements AssemblyConstruct.Operand {

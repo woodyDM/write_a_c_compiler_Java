@@ -2,7 +2,6 @@ package cn.deepmax.jfx.emit;
 
 import cn.deepmax.jfx.asm.Asm;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
-import cn.deepmax.jfx.ir.IRType;
 
 import java.util.List;
 
@@ -22,19 +21,31 @@ public class Emission {
     }
 
     public String codegen() {
-        genFuncdef();
-        genInstruction();
+        for (AssemblyConstruct.FunctionDef functionDef : program.functionDef()) {
+            genFuncdefGlobl(functionDef);
+        }
+        for (AssemblyConstruct.FunctionDef functionDef : program.functionDef()) {
+            genFuncPrepareStackRegister(functionDef);
+            genInstruction(functionDef);
+        }
+
         genProgram();
         return sb.toString();
     }
 
-    private void genFunction(AssemblyConstruct.FunctionDef functionDef) {
-
+    private void genFuncPrepareStackRegister(AssemblyConstruct.FunctionDef functionDef) {
+        Asm.Function fn = (Asm.Function) functionDef;
+        sb.append(fn.name()).append(":\n");
+        pushIns("pushq %rbp");
+        pushIns("movq  %rsp, %rbp");
     }
 
-    private void genInstruction() {
-//        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
-        AssemblyConstruct.FunctionDef functionDef =null;
+    private void genFuncdefGlobl(AssemblyConstruct.FunctionDef functionDef) {
+        Asm.Function fn = (Asm.Function) functionDef;
+        sb.append("\t.globl ").append(fn.name()).append("\n");
+    }
+
+    private void genInstruction(AssemblyConstruct.FunctionDef functionDef) {
         Asm.Function fn = (Asm.Function) functionDef;
         List<AssemblyConstruct.Instruction> instructions = fn.instructions();
         for (AssemblyConstruct.Instruction it : instructions) {
@@ -60,32 +71,28 @@ public class Emission {
                     String dst = genOperand(b.dst());
                     pushIns(String.format("%s\t%s,\t%s", op, src, dst));
                 }
-                case Asm.Cdq c -> {
-                    pushIns("cdq");
-                }
-                case Asm.Idiv d -> {
-                    pushIns("idivl\t" + genOperand(d.operand()));
-                }
-                case Asm.AllocateStack s -> {
-                    pushIns("subq\t$" + s.size() + ",\t%rsp");
-                }
+                case Asm.Cdq c -> pushIns("cdq");
+                case Asm.Idiv d -> pushIns("idivl\t" + genOperand(d.operand()));
+                case Asm.AllocateStack s -> pushIns("subq\t$" + s.size() + ",\t%rsp");
+                case Asm.DeallocateStack s -> pushIns("addq\t$" + s.size() + ",\t%rsp");
                 case Asm.Cmp cmp -> {
                     String left = genOperand(cmp.left());
                     String right = genOperand(cmp.right());
                     pushIns(String.format("cmpl\t%s,\t%s", left, right));
                 }
-                case Asm.Jmp jp -> {
-                    pushIns(String.format("jmp\t.L%s", jp.targetId()));
-                }
-                case Asm.JmpCC jpc -> {
-                    pushIns(String.format("j%s\t.L%s", jpc.condition().toString(), jpc.targetId()));
-                }
-                case Asm.SetCC scc -> {
-                    pushIns(String.format("set%s\t%s", scc.condition().toString(), genOperand1Byte(scc.operand())));
-                }
+                case Asm.Jmp jp -> pushIns(String.format("jmp\t.L%s", jp.targetId()));
+                case Asm.JmpCC jpc -> pushIns(String.format("j%s\t.L%s", jpc.condition().toString(), jpc.targetId()));
+                case Asm.SetCC scc ->
+                        pushIns(String.format("set%s\t%s", scc.condition().toString(), genOperand1Byte(scc.operand())));
                 case Asm.Label label -> {
                     String ins = String.format(".L%s :", label.id());
                     sb.append((ins)).append("\n");
+                }
+                case Asm.Push p -> {
+                    pushIns(String.format("pushq\t%s", genOperand(p.operand(), 8)));
+                }
+                case Asm.Call c -> {
+                    pushIns(String.format("call\t%s@PLT", c.identifier()));
                 }
                 default -> throw new UnsupportedOperationException(it.toString());
             }
@@ -111,41 +118,28 @@ public class Emission {
     }
 
     private String genOperand1Byte(AssemblyConstruct.Operand op) {
-        return switch (op) {
-            case Asm.Register register -> {
-                yield switch (register.reg()) {
-                    case Asm.Registers.AX -> "%al";
-                    case Asm.Registers.DX -> "%dl";
-                    case Asm.Registers.R10D -> "%r10b";
-                    case Asm.Registers.R11D -> "%r11b";
-                    default -> throw new UnsupportedOperationException(register.reg().toString());
-                };
-            }
-            case Asm.Stack s -> s.pos() + "(%rbp)";
-            case Asm.Pseudo p -> {
-                //allocate as stack
-                int offset = -IRType.Var.offset(p.id());
-                yield offset + "(%rbp)";
-            }
-            default -> throw new UnsupportedOperationException(op.toString());
-        };
+        return genOperand(op, 1);
     }
 
     private String genOperand(AssemblyConstruct.Operand op) {
+        return genOperand(op, 4);
+    }
+
+    private String genOperand(AssemblyConstruct.Operand op, int byteSize) {
         return switch (op) {
             case Asm.Register register -> {
-                yield switch (register.reg()) {
-                    case Asm.Registers.AX -> "%eax";
-                    case Asm.Registers.DX -> "%edx";
-                    case Asm.Registers.R10D -> "%r10d";
-                    case Asm.Registers.R11D -> "%r11d";
-                    default -> throw new UnsupportedOperationException(register.reg().toString());
+                Asm.Registers reg = (Asm.Registers) register.reg();
+                yield switch (byteSize) {
+                    case 1 -> "%" + reg.b1;
+                    case 4 -> "%" + reg.b4;
+                    case 8 -> "%" + reg.b8;
+                    default -> throw new IllegalStateException("invalid " + byteSize);
                 };
             }
             case Asm.Stack s -> s.pos() + "(%rbp)";
             case Asm.Pseudo p -> {
                 //allocate as stack
-                int offset = -IRType.Var.offset(p.id());
+                int offset = -p.getOffset();
                 yield offset + "(%rbp)";
             }
             case Asm.Imm imm -> "$" + imm.v();
@@ -153,15 +147,6 @@ public class Emission {
         };
     }
 
-    private void genFuncdef() {
-//        AssemblyConstruct.FunctionDef functionDef = program.functionDef();
-        AssemblyConstruct.FunctionDef functionDef = null;
-        Asm.Function fn = (Asm.Function) functionDef;
-        sb.append("\t.globl ").append(fn.name()).append("\n")
-                .append(fn.name()).append(":\n");
-        pushIns("pushq %rbp");
-        pushIns("movq  %rsp, %rbp");
-    }
 
     private void pushIns(String ins) {
         sb.append("\t").append((ins)).append("\n");
