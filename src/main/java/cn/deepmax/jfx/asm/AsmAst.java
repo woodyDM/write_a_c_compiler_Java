@@ -56,7 +56,7 @@ public class AsmAst {
         for (int i = 6; i < paramSize; i++) {
             //copy on stack
             int offset = 16 + (i - 6) * 8;
-            allIns.addAll(Asm.Mov.makeMove(new Asm.Stack(-offset), pseudoContext.make(params.get(i))));
+            allIns.addAll(Asm.Mov.makeMove(new Asm.Stack(offset), pseudoContext.make(params.get(i))));
         }
         transInstruction(fn.body(), allIns);
         long varNumber = this.pseudoContext.getPseudoCount();
@@ -65,12 +65,9 @@ public class AsmAst {
         return function;
     }
 
-    private int get16AlignedStack(long varNumber) {
-        if (varNumber % 2 == 0) {
-            return (int) varNumber * 4;
-        } else {
-            return (int) (varNumber + 1) * 4;
-        }
+    static int get16AlignedStack(long varNumber) {
+        var value = Math.ceil(varNumber / 4.0);
+        return (int) value * 16;
     }
 
     private void transInstruction(List<IR.Instruction> body, List<AssemblyConstruct.Instruction> list) {
@@ -143,9 +140,9 @@ public class AsmAst {
                 }
                 case IRType.FunCall call -> {
                     int paramSize = call.args().size();
-                    int stackPadding = paramSize % 2 != 0 ? 8 : 0;
+                    int stackPadding = call.stackArgCount() % 2 != 0 ? 8 : 0;
                     if (stackPadding != 0) {
-                        list.add(new Asm.AllocateStack(8)); //stackPadding
+                        list.add(new Asm.AllocateStack(stackPadding)); //stackPadding
                     }
                     for (int i = 0; i < paramSize && i < 6; i++) {
                         IR.Val val = call.args().get(i);
@@ -165,7 +162,7 @@ public class AsmAst {
                     }
                     list.add(new Asm.Call(call.functionName()));
                     //adjust stack pointer
-                    int bytesToRemove = 8 * (paramSize - 6) * stackPadding;
+                    int bytesToRemove = 8 * call.stackArgCount() + stackPadding;
                     if (bytesToRemove != 0) {
                         list.add(new Asm.DeallocateStack(bytesToRemove));
                     }

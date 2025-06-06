@@ -8,7 +8,6 @@ import cn.deepmax.jfx.ir.IRConverter;
 import cn.deepmax.jfx.lexer.Lexer;
 import cn.deepmax.jfx.parse.Ast;
 import cn.deepmax.jfx.parse.Parser;
-import cn.deepmax.jfx.parse.Identifiers;
 import cn.deepmax.jfx.parse.TypeChecker;
 import cn.deepmax.jfx.utils.ProcessRunner;
 
@@ -21,26 +20,37 @@ import java.nio.file.Paths;
 public class App {
     static String input =
             """
-                    int multiply_many_args(int a, int b, int c, int d, int e, int f, int g, int h){
-                        return a+b;
+                    
+                    int putchar(int c);
+                    
+                    int incr_and_print(int b) {
+                        return putchar(b + 2);
                     }
                     
                     int main(void) {
-                        int x = 56;  
-                    
-                        int seven = 7;
-                        int eight = 78;
-                        int y = multiply_many_args(x, 2, 3, 4, 5, 6, seven,x);
-                        if (x != 3) {
-                            return 1;
-                        }
-                        if (y != 589680/2) {
-                            return 2;
-                        }
-                        return x / (y % 256);
+                        incr_and_print(70);
+                        return 0;
                     }
                     
+                    
+                    
                     """;
+//    static String input =
+//            """
+//                    int multiply_many_args(int a, int b, int c, int d, int e, int f, int g, int h){
+//                        return a+b+c+d+e+f+g+h;
+//                    }
+//
+//                    int main(void) {
+//                        int x = 1;
+//
+//                        int seven = 7;
+//                        int eight = 8;
+//                        int y = multiply_many_args(x, 2, 3, 4*4, 5/5, 6, seven,eight);
+//                        return y-400;
+//                    }
+//
+//                    """;
 
 
     public static void main(String[] args) throws IOException {
@@ -49,23 +59,38 @@ public class App {
             mainLocal(args);
             return;
         }
-
+//        throw new RuntimeException("Args :" + Arrays.toString(args));
         runTests(args);
     }
 
     private static void runTests(String[] args) {
         //for book's tests
-        String path = args.length > 1 ? args[1] : args[0];
-        String param = args.length > 1 ? args[0] : "";
+        Args ag = new Args(args);
         try {
-            String inputSource = Files.readString(Paths.get(path));
-            runTest(param, inputSource, path);
+            String inputSource = Files.readString(Paths.get(ag.path));
+            runTest(ag, ag.param, inputSource, ag.path);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void runTest(String level, String source, String sourcePath) throws IOException {
+    static class Args {
+        boolean toC;
+        String path;
+        String param;
+
+        Args(String[] args) {
+            int i = 0;
+            if (args[0].equals("-c")) {
+                this.toC = true;
+                i++;
+            }
+            this.path = args.length > 1 + i ? args[1 + i] : args[i];
+            this.param = args.length > 1 + i ? args[i] : "";
+        }
+    }
+
+    private static void runTest(Args ag, String level, String source, String sourcePath) throws IOException {
         Lexer lexer = new Lexer(source);
         Parser p = new Parser(lexer);
         if ("--lex".equals(level)) return;
@@ -86,23 +111,26 @@ public class App {
         if ("--codegen".equals(level)) return;
         String asmCode = Emission.codegen(asmAst);
 
-        compileToBinary(sourcePath, asmCode);
+
+        compileToBinary(ag, sourcePath, asmCode);
     }
 
-    private static void compileToBinary(String sourcePath, String asmCode) throws IOException {
+    private static void compileToBinary(Args ag, String sourcePath, String asmCode) throws IOException {
         int i = sourcePath.lastIndexOf(".");
         if (i == -1) throw new RuntimeException("source no suffix " + sourcePath);
-        String binPath = sourcePath.substring(0, i);
         String asmPath = sourcePath.substring(0, i) + ".s";
-
-
         Path path = Paths.get(asmPath);
         Files.createDirectories(path.getParent());
-
         Files.writeString(path, asmCode,
                 StandardCharsets.UTF_8);
-
-        ProcessRunner.run("gcc", asmPath, "-o", binPath);
+        //compile using gcc
+        String binPath = sourcePath.substring(0, i);
+        if (ag.toC) {
+            String objPath = binPath + ".o";
+            ProcessRunner.run("gcc", "-c", asmPath, "-o", objPath);
+        } else {
+            ProcessRunner.run("gcc", asmPath, "-o", binPath);
+        }
 
     }
 

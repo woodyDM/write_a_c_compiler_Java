@@ -75,6 +75,10 @@ public class IRType {
 
     public record FunCall(String functionName, List<IR.Val> args, IR.Val dst) implements IR.Instruction {
 
+        public int stackArgCount() {
+            return Math.max(0, args.size() - 6);
+        }
+
     }
 
     public record FunctionDef(String identifier, List<String> params,

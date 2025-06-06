@@ -233,7 +233,7 @@ public class Asm {
 
         public int getOffset() {
             String[] s = id.split("\\.");
-            return Integer.parseInt(s[s.length - 1]) * 4;
+            return Integer.parseInt(s[s.length - 1]) * 4 + 4;
         }
     }
 
