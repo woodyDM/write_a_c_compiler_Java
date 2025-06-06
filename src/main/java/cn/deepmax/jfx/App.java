@@ -131,7 +131,7 @@ public class App {
         AssemblyConstruct.Program asmAst = AsmAst.createAsmAst(irProgram);
         System.out.println("--------- asm ast ---------");
         System.out.println(asmAst);
-        System.out.printf("-----current variable id = [%d] -------\n", Identifiers.currentNumber());
+        System.out.printf("-----current variable   -------\n");
 
         String asmCode = Emission.codegen(asmAst);
         System.out.println("---- asm -------");

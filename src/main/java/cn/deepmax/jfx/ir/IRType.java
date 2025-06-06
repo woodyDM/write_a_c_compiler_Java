@@ -4,6 +4,7 @@ import cn.deepmax.jfx.parse.Identifiers;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class IRType {
 
@@ -11,26 +12,42 @@ public class IRType {
     }
 
     public record Constant(int v) implements IR.Val {
+
     }
 
     public record Var(String identifier) implements IR.Val {
+
+        private static final AtomicLong id = new AtomicLong(0);
+
         public static Var makeTemp() {
             String name = makeTempVarName();
             return new Var(name);
         }
 
-        public int getStackOffset() {
+        public static long idOf(String identifier) {
             int idx = identifier.indexOf(".");
             if (idx != -1) {
-                int id = Integer.parseInt(identifier.substring(idx + 1));
-                return id * 4;
+                long id = Long.parseLong(identifier.substring(idx + 1));
+                return id;
             } else {
                 throw new UnsupportedOperationException("identifier name not valid : " + identifier);
             }
         }
 
+        public static int offset(String identifier) {
+            return (int) (idOf(identifier) * 4);
+        }
+
+        public int getStackOffset() {
+            return offset(this.identifier());
+        }
+
+        public static long currentId() {
+            return id.get();
+        }
+
         private static String makeTempVarName() {
-            return "var." + Identifiers.nextId();
+            return "var." + id.getAndIncrement();
         }
     }
 

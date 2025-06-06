@@ -2,17 +2,22 @@ package cn.deepmax.jfx.asm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
 public class Asm {
+    private Asm() {
+    }
 
-    public record AsmProgram(AssemblyConstruct.FunctionDef functionDef) implements AssemblyConstruct.Program {
+    public record AsmProgram(List<AssemblyConstruct.FunctionDef> functionDef) implements AssemblyConstruct.Program {
 
     }
 
     public record Function(String name,
-                           List<AssemblyConstruct.Instruction> instructions)
-            implements AssemblyConstruct.FunctionDef {
+                           int paramSize,
+                           long tempVarBase,
+                           long tempVarSize,
+                           List<AssemblyConstruct.Instruction> instructions) implements AssemblyConstruct.FunctionDef {
     }
 
     public record Unary(AssemblyConstruct.UnaryOperator op,
@@ -28,14 +33,14 @@ public class Asm {
                                                                AssemblyConstruct.Operand dst) {
             List<AssemblyConstruct.Instruction> result = new ArrayList<>();
             if (op == BinaryOp.Add || op == BinaryOp.Sub) {
-                if (operand instanceof Stack && dst instanceof Stack) {
+                if (operand instanceof Pseudo && dst instanceof Pseudo) {
                     result.addAll(Mov.makeMove(operand, Register.R10D));
                     result.add(new Binary(op, Register.R10D, dst));
                 } else {
                     result.add(new Binary(op, operand, dst));
                 }
             } else if (op == BinaryOp.Mult) {
-                if (dst instanceof Stack) {
+                if (dst instanceof Pseudo) {
                     Register tempRegister = Register.R11D;
                     result.addAll(Mov.makeMove(dst, tempRegister));
                     result.add(new Binary(op, operand, tempRegister));
@@ -86,7 +91,7 @@ public class Asm {
                       AssemblyConstruct.Operand right) implements AssemblyConstruct.Instruction {
         public static List<AssemblyConstruct.Instruction> make(AssemblyConstruct.Operand left,
                                                                AssemblyConstruct.Operand right) {
-            if (left instanceof Stack && right instanceof Stack) {
+            if (left instanceof Pseudo && right instanceof Pseudo) {
                 return List.of(
                         new Mov(left, Register.R10D),
                         new Cmp(Register.R10D, right)
@@ -119,7 +124,7 @@ public class Asm {
     public static <T> List<T> fixBothStack(AssemblyConstruct.Operand src,
                                            AssemblyConstruct.Operand dest,
                                            BiFunction<AssemblyConstruct.Operand, AssemblyConstruct.Operand, T> construct) {
-        if (src instanceof Stack && dest instanceof Stack) {
+        if (src instanceof Pseudo && dest instanceof Pseudo) {
             return List.of(
                     construct.apply(src, Register.R10D),
                     construct.apply(Register.R10D, dest)
@@ -130,8 +135,21 @@ public class Asm {
 
     }
 
-    public record AllocateStack(int size) implements AssemblyConstruct.Instruction {
+    public record AllocateStack(long size) implements AssemblyConstruct.Instruction {
     }
+
+    public record DeallocateStack(long size) implements AssemblyConstruct.Instruction {
+
+    }
+
+    public record Call(String identifier) implements AssemblyConstruct.Instruction {
+
+    }
+
+    public record Push(AssemblyConstruct.Operand operand) implements AssemblyConstruct.Instruction {
+
+    }
+
 
     public enum UnaryOp implements AssemblyConstruct.UnaryOperator {
         Neg,
@@ -140,8 +158,13 @@ public class Asm {
 
     public enum Registers implements AssemblyConstruct.Reg {
         AX,
-        R10D,
+        CX,
         DX,
+        DI,
+        SI,
+        R8D,
+        R9D,
+        R10D,
         R11D
     }
 
@@ -169,6 +192,13 @@ public class Asm {
     }
 
     public record Pseudo(String id) implements AssemblyConstruct.Operand {
+        public static final AtomicLong seq = new AtomicLong(0);
+
+        public static Pseudo make(String id) {
+            seq.getAndIncrement();
+            return new Pseudo(id);
+        }
+
     }
 
     public record Imm(int v) implements AssemblyConstruct.Operand {

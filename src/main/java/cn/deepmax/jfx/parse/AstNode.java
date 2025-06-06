@@ -12,7 +12,7 @@ public interface AstNode {
     /**
      * 函数参数列表
      */
-    interface Param {
+    sealed interface Param permits Ast.VarParam {
 
     }
 

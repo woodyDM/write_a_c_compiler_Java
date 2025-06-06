@@ -15,28 +15,38 @@ public class AsmAst {
         this.program = program;
     }
 
-
     public static AssemblyConstruct.Program createAsmAst(IR.Program program) {
         return new AsmAst(program).transform();
     }
 
     public AssemblyConstruct.Program transform() {
         var pg = (IRType.Program) this.program;
-
-//        Asm.AsmProgram p = new Asm.AsmProgram(irFunc);
-        return null;
+        List<AssemblyConstruct.FunctionDef> list = pg.functionDef().stream()
+                .map(this::transFunc)
+                .toList();
+        return new Asm.AsmProgram(list);
     }
 
     private AssemblyConstruct.FunctionDef transFunc(IR.FunctionDef functionDef) {
         var fn = (IRType.FunctionDef) functionDef;
-        var ins = transInstruction(fn.body());
-        Asm.Function function = new Asm.Function(fn.identifier(), ins);
+        long varBase = Asm.Pseudo.seq.get();
+        //params copy
+        List<AssemblyConstruct.Instruction> allIns = new ArrayList<>();
+        var bodyInstruction = transInstruction(fn.body());
+        long varNumber = Asm.Pseudo.seq.get() - varBase;
+
+        var params = ((IRType.FunctionDef) functionDef).params();
+        int paramSize = fn.params().size();
+        allIns.add(new Asm.AllocateStack((varNumber + paramSize) * 4));
+        if (varNumber >= 1) allIns.add(new Asm.Mov(Asm.Register.DX, Asm.Pseudo.make(params.get(0))));
+
+        Asm.Function function = new Asm.Function(fn.identifier(), paramSize, varBase, varNumber, bodyInstruction);
         return function;
     }
 
     private List<AssemblyConstruct.Instruction> transInstruction(List<IR.Instruction> body) {
         List<AssemblyConstruct.Instruction> list = new ArrayList<>();
-        //first AllocateStaci
+        //first Allocate Stack
         list.add(new Asm.AllocateStack(Identifiers.currentNumber() * 4));
         for (IR.Instruction ir : body) {
             switch (ir) {
@@ -144,11 +154,7 @@ public class AsmAst {
     private AssemblyConstruct.Operand transOperand(IR.Val exp) {
         return switch (exp) {
             case IRType.Constant c -> new Asm.Imm(c.v());
-            case IRType.Var v -> {
-                int off = v.getStackOffset();
-                //directly return stack
-                yield new Asm.Stack(-off);
-            }
+            case IRType.Var v -> Asm.Pseudo.make(v.identifier());
             default -> throw new UnsupportedOperationException(exp.toString());
         };
     }

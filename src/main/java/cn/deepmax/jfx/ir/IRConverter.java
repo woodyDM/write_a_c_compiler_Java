@@ -33,8 +33,8 @@ public class IRConverter {
             return null;
         }
         List<IR.Instruction> instructions = convertBlockItems(fn.body().blockItems());
-        //todo?
-        return new IRType.FunctionDef(fn.identifier(), null, instructions);
+        List<String> paramNames = fn.params().stream().map(f -> ((Ast.VarParam) f).identifier()).toList();
+        return new IRType.FunctionDef(fn.identifier(), paramNames, instructions);
     }
 
     private List<IR.Instruction> convertBlockItems(List<AstNode.BlockItem> itemList) {

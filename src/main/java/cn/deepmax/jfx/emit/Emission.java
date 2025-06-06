@@ -2,6 +2,7 @@ package cn.deepmax.jfx.emit;
 
 import cn.deepmax.jfx.asm.Asm;
 import cn.deepmax.jfx.asm.AssemblyConstruct;
+import cn.deepmax.jfx.ir.IRType;
 
 import java.util.List;
 
@@ -25,6 +26,10 @@ public class Emission {
         genInstruction();
         genProgram();
         return sb.toString();
+    }
+
+    private void genFunction(AssemblyConstruct.FunctionDef functionDef) {
+
     }
 
     private void genInstruction() {
@@ -116,6 +121,11 @@ public class Emission {
                 };
             }
             case Asm.Stack s -> s.pos() + "(%rbp)";
+            case Asm.Pseudo p -> {
+                //allocate as stack
+                int offset = -IRType.Var.offset(p.id());
+                yield offset + "(%rbp)";
+            }
             default -> throw new UnsupportedOperationException(op.toString());
         };
     }
@@ -132,6 +142,11 @@ public class Emission {
                 };
             }
             case Asm.Stack s -> s.pos() + "(%rbp)";
+            case Asm.Pseudo p -> {
+                //allocate as stack
+                int offset = -IRType.Var.offset(p.id());
+                yield offset + "(%rbp)";
+            }
             case Asm.Imm imm -> "$" + imm.v();
             default -> throw new UnsupportedOperationException(op.toString());
         };
