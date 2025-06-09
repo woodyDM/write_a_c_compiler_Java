@@ -7,7 +7,7 @@ import java.util.List;
 public class Ast {
 
 
-    public record AstProgram(List<FunctionDeclare> functionDeclarations) implements AstNode.Program {
+    public record AstProgram(List<AstNode.Declaration> declarations) implements AstNode.Program {
 
     }
 
@@ -73,16 +73,18 @@ public class Ast {
 
     }
 
-    public record VarDeclare(String identifier, @Nullable AstNode.Exp exp) implements AstNode.Declaration {
+    public record VarDeclare(String identifier,
+                             AstNode.SpecifierList specifiers,
+                             @Nullable AstNode.Exp exp,
+                             @Nullable AstNode.StorageClass storageClass) implements AstNode.Declaration {
 
     }
 
-    public record FunctionDeclare(String identifier, List<AstNode.Param> params, @Nullable Block body)
+    public record FunctionDeclare(String identifier,
+                                  AstNode.SpecifierList specifierList,
+                                  List<AstNode.Param> params, @Nullable Block body, @Nullable
+                                  AstNode.StorageClass storageClass)
             implements AstNode.Declaration {
-
-        public boolean sameParamDef(FunctionDeclare other) {
-            return other.realParamSize() == this.realParamSize();
-        }
 
         public int realParamSize() {
             return params.size();

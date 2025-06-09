@@ -20,12 +20,17 @@ public class TypeChecker {
      * @return
      */
     public void checkProgram(Ast.AstProgram program) {
-        program.functionDeclarations()
+        program.declarations()
                 .forEach(f -> checkFunctionDeclare(f));
     }
 
-    private void checkFunctionDeclare(Ast.FunctionDeclare fun) {
-        checkFunctionDeclaration(fun);
+    private void checkFunctionDeclare(AstNode.Declaration fun) {
+        if (fun instanceof Ast.FunctionDeclare fn)
+            checkFunctionDeclaration(fn);
+        else{
+            //todo
+
+        }
     }
 
     private void checkBlock(String funIdentifier, Ast.Block block) {

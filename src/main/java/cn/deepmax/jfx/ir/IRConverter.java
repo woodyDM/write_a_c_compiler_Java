@@ -22,11 +22,12 @@ public class IRConverter {
     public IR.Program convertToIR() {
         Ast.AstProgram p = (Ast.AstProgram) program;
         List<IR.FunctionDef> result = new ArrayList<>();
-        for (Ast.FunctionDeclare fn : p.functionDeclarations()) {
-            IR.FunctionDef irDef = convertFn(fn);
-            if (irDef != null) {
-                result.add(irDef);
-            }
+        for (AstNode.Declaration fn : p.declarations()) {
+            //todo
+//            IR.FunctionDef irDef = convertFn(fn);
+//            if (irDef != null) {
+//                result.add(irDef);
+//            }
         }
         return new IRType.Program(result);
     }

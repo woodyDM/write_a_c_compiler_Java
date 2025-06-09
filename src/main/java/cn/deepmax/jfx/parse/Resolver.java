@@ -20,15 +20,22 @@ public class Resolver {
      * @return
      */
     public Ast.AstProgram resolveProgram(Ast.AstProgram program) {
-        List<Ast.FunctionDeclare> list = program.functionDeclarations()
+        List<AstNode.Declaration> list = program.declarations()
                 .stream()
                 .map(f -> resolveFunctionDeclare(f))
                 .toList();
         return new Ast.AstProgram(list);
     }
 
-    private Ast.FunctionDeclare resolveFunctionDeclare(Ast.FunctionDeclare fun) {
-        return (Ast.FunctionDeclare) resolveFunctionDeclaration(fun);
+    private AstNode.Declaration resolveFunctionDeclare(AstNode.Declaration fun) {
+        if (fun instanceof Ast.FunctionDeclare fn) {
+            return resolveFunctionDeclaration(fn);
+
+        } else {
+
+            //todo
+            return null;
+        }
     }
 
     private Ast.Block resolveBlock(Ast.Block block) {
@@ -66,7 +73,7 @@ public class Resolver {
                 var idValue = d.identifier();
                 identifiers.checkVar(idValue);
                 String replacedName = identifiers.putVar(idValue, true);
-                yield new Ast.VarDeclare(replacedName, resolveExp(d.exp()));
+                yield new Ast.VarDeclare(replacedName, d.specifiers(), resolveExp(d.exp()), d.storageClass());
             }
             case Ast.FunctionDeclare f -> resolveFunctionDeclaration(f);
         };
@@ -80,7 +87,7 @@ public class Resolver {
                 .toList();
         Ast.Block newBody = resolveBlock(f.body());
         this.identifiers = this.identifiers.parent;
-        return new Ast.FunctionDeclare(f.identifier(), resolvedParams, newBody);
+        return new Ast.FunctionDeclare(f.identifier(), f.specifierList(), resolvedParams, newBody, null);
     }
 
     private AstNode.Param resolveParam(AstNode.Param param) {

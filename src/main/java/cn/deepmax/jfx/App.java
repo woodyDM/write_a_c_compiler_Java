@@ -21,15 +21,19 @@ public class App {
     static String input =
             """
                     
-                    int putchar(int c);
+                    extern int b;
+                    extern int getId(int b);
                     
-                    int incr_and_print(int b) {
-                        return putchar(b + 2);
+                    int visit(int a){
+                        return a+10;
                     }
                     
                     int main(void) {
-                        incr_and_print(70);
-                        return 0;
+                        static int a = 100;
+                        for(int b=10;b<10;b=b+1){
+                            a=a+b;
+                        }
+                        return a;
                     }
                     
                     

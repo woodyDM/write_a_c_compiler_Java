@@ -12,11 +12,14 @@ import java.util.stream.Collectors;
  */
 public class Parser {
     public final List<Token> tokenList;
-    int pos = 0;
     private final int len;
-
     public final Resolver resolver = new Resolver();
+
+    int pos = 0;
     private Token currentLine;
+
+    int markPos;
+    private Token markLine;
 
     public Parser(Lexer lexer) {
         this.tokenList = lexer.tokenList();
@@ -24,48 +27,58 @@ public class Parser {
     }
 
     public Ast.AstProgram parseProgram() {
-        List<Ast.FunctionDeclare> funcs = parseFunctionDeclarationList();
+        List<AstNode.Declaration> funcs = parseDeclarationList();
         Ast.AstProgram p = new Ast.AstProgram(funcs);
 
         expect(TokenType.EOF, NoneParams.NONE);
         return p;
     }
 
-    public List<Ast.FunctionDeclare> parseFunctionDeclarationList() {
-        List<Ast.FunctionDeclare> result = new ArrayList<>();
-        Ast.FunctionDeclare it;
-        while ((it = parseFunctionDeclaration()) != null) {
+    public List<AstNode.Declaration> parseDeclarationList() {
+        List<AstNode.Declaration> result = new ArrayList<>();
+        AstNode.Declaration it;
+        while ((it = parseDeclaration()) != null) {
             result.add(it);
         }
         return result;
     }
 
-    private Ast.FunctionDeclare parseFunctionDeclaration() {
+    private AstNode.Declaration parseDeclaration() {
         if (getNextToken() == TokenType.EOF) {
             return null;
         }
-        expect(TokenType.KEYWORD, new StringTokenParam("int"));
-        Token idToken = expect(TokenType.ID, null);
-
-        expect(TokenType.OPEN_PARENTHESIS, NoneParams.NONE);
-        var paramList = parseParamList();
-        expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
-        Token nextToken = getNextToken();
-
-        Ast.Block block = null;
-        if (nextToken == TokenType.SEMICOLON) {
-            //declare
-            moveNext();
-        } else {
-            //definite
-            List<AstNode.BlockItem> fnBody = new ArrayList<>();
-
-            expect(TokenType.OPEN_BRACE, NoneParams.NONE);
-            parseFunctionBody(fnBody);
-            expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
-            block = new Ast.Block(fnBody);
+        AstNode.SpecifierList specifierList = tryParseSpecifiers();
+        if (specifierList == null) {
+            throw new ParseException(this, "Expect specifier list!");
         }
-        return new Ast.FunctionDeclare(idToken.params().toString(), paramList, block);
+        checkSpecifier(specifierList);
+
+        Token idToken = expect(TokenType.ID, null);
+        var next = getNextToken();
+        boolean isFuncDef = next == TokenType.OPEN_PARENTHESIS;
+        if (isFuncDef) {
+            expect(TokenType.OPEN_PARENTHESIS, NoneParams.NONE);
+            var paramList = parseParamList();
+            expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
+            Token nextToken = getNextToken();
+
+            Ast.Block block = null;
+            if (nextToken == TokenType.SEMICOLON) {
+                //declare
+                moveNext();
+            } else {
+                //definite
+                List<AstNode.BlockItem> fnBody = new ArrayList<>();
+
+                expect(TokenType.OPEN_BRACE, NoneParams.NONE);
+                parseFunctionBody(fnBody);
+                expect(TokenType.CLOSE_BRACE, NoneParams.NONE);
+                block = new Ast.Block(fnBody);
+            }
+            return new Ast.FunctionDeclare(idToken.params().toString(), specifierList, paramList, block, specifierList.getStorageClazz());
+        } else {
+            return parseVarDeclaration((Tokens.Id) idToken, next, specifierList);
+        }
     }
 
     /**
@@ -122,15 +135,15 @@ public class Parser {
 
     //blockItem ::= <statement> | <declaration>
     private AstNode.BlockItem parseBlockItem() {
-        Token nextToken = getNextToken();
-        if (nextToken.isKeyword("int")) {
+        AstNode.SpecifierList specifierList = tryParseSpecifiers();
+        if (specifierList != null) {
             //declaration
-            moveNext();
+            checkSpecifier(specifierList);
             Token id = expect(TokenType.ID, null);
             var next = getNextToken();
             AstNode.Declaration declaration = next == TokenType.OPEN_PARENTHESIS ?
-                    parseFuncDeclaration((Tokens.Id) id) :
-                    parseVarDeclaration((Tokens.Id) id, next);
+                    parseFuncDeclaration((Tokens.Id) id, specifierList) :
+                    parseVarDeclaration((Tokens.Id) id, next, specifierList);
 
             return new Ast.DeclareBlockItem(declaration);
         }
@@ -138,16 +151,54 @@ public class Parser {
         return new Ast.StatementBlockItem(statement);
     }
 
-    private AstNode.Declaration parseFuncDeclaration(Tokens.Id id) {
+    private void checkSpecifier(AstNode.SpecifierList specifierList) {
+        Map<Boolean, List<AstNode.Specifier>> gp = specifierList.list().stream()
+                .collect(Collectors.groupingBy(i -> i.type()));
+        var typeList = gp.getOrDefault(true, Collections.emptyList());
+        var storageList = gp.getOrDefault(false, Collections.emptyList());
+        if (typeList.size() != 1) {
+            throw new ParseException(this, "Invalid type specifier");
+        }
+        if (storageList.size() > 1) {
+            throw new ParseException(this, "Invalid storage class");
+        }
+    }
+
+    private AstNode.SpecifierList tryParseSpecifiers() {
+        this.mark();
+        Token next;
+        List<AstNode.Specifier> list = new ArrayList<>();
+        while ((next = getNextToken()).type() == TokenType.KEYWORD) {
+            AstNode.Specifier s = AstNode.Specifier.parse(next.params().toString());
+            if (s == null) {
+                this.rewind();
+                return null;
+            } else {
+                list.add(s);
+                moveNext();
+            }
+        }
+        if (next.type() != TokenType.ID) {
+            this.rewind();
+            return null;
+        }
+        if (list.isEmpty()) {
+            this.rewind();
+            return null;
+        }
+        return new AstNode.SpecifierList(list);
+    }
+
+    private AstNode.Declaration parseFuncDeclaration(Tokens.Id id, AstNode.SpecifierList specifierList) {
         moveNext();
         //parse param list
         List<AstNode.Param> params = parseParamList();
         expect(TokenType.CLOSE_PARENTHESIS, NoneParams.NONE);
         expect(TokenType.SEMICOLON);
-        return new Ast.FunctionDeclare(id.params().toString(), params, null);
+        return new Ast.FunctionDeclare(id.params().toString(), specifierList, params, null, specifierList.getStorageClazz());
     }
 
-    private AstNode.Declaration parseVarDeclaration(Tokens.Id id, Token next) {
+    private AstNode.Declaration parseVarDeclaration(Tokens.Id id, Token next, AstNode.SpecifierList specifierList) {
         AstNode.Exp init = null;
         if (next == TokenType.ASSIGNMENT) {
             //init
@@ -155,7 +206,7 @@ public class Parser {
             init = parseExp(0);
         }
         expect(TokenType.SEMICOLON);
-        return new Ast.VarDeclare(id.params().toString(), init);
+        return new Ast.VarDeclare(id.params().toString(), specifierList, init, specifierList.getStorageClazz());
     }
 
 
@@ -247,11 +298,12 @@ public class Parser {
     private AstNode.ForInit parseForInit() {
         Token nextToken = getNextToken();
         if (nextToken.isKeyword("int")) {
-            //declare
+            //declare/ do not consider storage class
+            //todo support other types
             moveNext();
             Token id = expect(TokenType.ID, null);
             var next = getNextToken();
-            var dec = parseVarDeclaration((Tokens.Id) id, next);
+            var dec = parseVarDeclaration((Tokens.Id) id, next, AstNode.SpecifierList.intList());
             return new Ast.ForInitDeclare(dec);
         }
         //exp ?
@@ -461,6 +513,22 @@ public class Parser {
      */
     private void moveNext() {
         moveToNextToken();
+    }
+
+    /**
+     * mrk current pos
+     */
+    private void mark() {
+        this.markPos = this.pos;
+        this.markLine = this.currentLine;
+    }
+
+    /**
+     * rewind to previous mark pos
+     */
+    private void rewind() {
+        this.pos = this.markPos;
+        this.currentLine = this.markLine;
     }
 
 }
