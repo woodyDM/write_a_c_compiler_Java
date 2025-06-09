@@ -7,6 +7,8 @@ import java.util.Set;
 
 public class Lexer {
 
+    Set<String> KEYWORDS = Set.of("int", "void", "return", "if", "else", "do", "while", "for", "break", "continue","static","extern");
+
     final byte[] data;
     final String txt;
     private final int len;
@@ -120,7 +122,6 @@ public class Lexer {
             }
         }
 
-        Set<String> KEYWORDS = Set.of("int", "void", "return", "if", "else", "do", "while", "for", "break", "continue");
         if (KEYWORDS.contains(value)) {
             return new Tokens.Keyword(value);
         }
