@@ -27,22 +27,23 @@ public class Parser {
     }
 
     public Ast.AstProgram parseProgram() {
-        List<AstNode.Declaration> funcs = parseDeclarationList();
+        List<AstNode.Declaration> result = new ArrayList<>();
+        AstNode.Declaration it;
+        while ((it = parseDeclaration()) != null) {
+            result.add(it);
+        }
+        List<AstNode.Declaration> funcs = result;
         Ast.AstProgram p = new Ast.AstProgram(funcs);
 
         expect(TokenType.EOF, NoneParams.NONE);
         return p;
     }
 
-    public List<AstNode.Declaration> parseDeclarationList() {
-        List<AstNode.Declaration> result = new ArrayList<>();
-        AstNode.Declaration it;
-        while ((it = parseDeclaration()) != null) {
-            result.add(it);
-        }
-        return result;
-    }
-
+    /**
+     * parse top level declaration
+     *
+     * @return
+     */
     private AstNode.Declaration parseDeclaration() {
         if (getNextToken() == TokenType.EOF) {
             return null;
@@ -142,7 +143,7 @@ public class Parser {
             Token id = expect(TokenType.ID, null);
             var next = getNextToken();
             AstNode.Declaration declaration = next == TokenType.OPEN_PARENTHESIS ?
-                    parseFuncDeclaration((Tokens.Id) id, specifierList) :
+                    parseFuncDeclarationInBlock((Tokens.Id) id, specifierList) :
                     parseVarDeclaration((Tokens.Id) id, next, specifierList);
 
             return new Ast.DeclareBlockItem(declaration);
@@ -189,7 +190,14 @@ public class Parser {
         return new AstNode.SpecifierList(list);
     }
 
-    private AstNode.Declaration parseFuncDeclaration(Tokens.Id id, AstNode.SpecifierList specifierList) {
+    /**
+     * func def in block
+     *
+     * @param id
+     * @param specifierList
+     * @return
+     */
+    private AstNode.Declaration parseFuncDeclarationInBlock(Tokens.Id id, AstNode.SpecifierList specifierList) {
         moveNext();
         //parse param list
         List<AstNode.Param> params = parseParamList();

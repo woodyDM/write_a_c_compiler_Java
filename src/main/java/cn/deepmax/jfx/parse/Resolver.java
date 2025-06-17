@@ -3,6 +3,7 @@ package cn.deepmax.jfx.parse;
 import cn.deepmax.jfx.exception.SemanticException;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -27,15 +28,17 @@ public class Resolver {
         return new Ast.AstProgram(list);
     }
 
-    private AstNode.Declaration resolveFunctionDeclare(AstNode.Declaration fun) {
-        if (fun instanceof Ast.FunctionDeclare fn) {
-            return resolveFunctionDeclaration(fn);
-
+    private AstNode.Declaration resolveFunctionDeclare(AstNode.Declaration d) {
+        if (d instanceof Ast.FunctionDeclare fn) {
+            return resolveFunctionDeclaration(fn, false);
         } else {
-
-            //todo
-            return null;
+            return resolveFileScopeVariableDeclaration((Ast.VarDeclare) d);
         }
+    }
+
+    private AstNode.Declaration resolveFileScopeVariableDeclaration(Ast.VarDeclare d) {
+        this.identifiers.putFileVar(d.identifier(), true);
+        return d;
     }
 
     private Ast.Block resolveBlock(Ast.Block block) {
@@ -70,16 +73,19 @@ public class Resolver {
     private AstNode.Declaration resolveDeclaration(AstNode.Declaration declaration) {
         return switch (declaration) {
             case Ast.VarDeclare d -> {
+                //resolve local variable declaration
                 var idValue = d.identifier();
-                identifiers.checkVar(idValue);
-                String replacedName = identifiers.putVar(idValue, true);
+                String replacedName = identifiers.handleLocalVariable(idValue, d.storageClass());
                 yield new Ast.VarDeclare(replacedName, d.specifiers(), resolveExp(d.exp()), d.storageClass());
             }
-            case Ast.FunctionDeclare f -> resolveFunctionDeclaration(f);
+            case Ast.FunctionDeclare f -> resolveFunctionDeclaration(f, true);
         };
     }
 
-    private AstNode.Declaration resolveFunctionDeclaration(Ast.FunctionDeclare f) {
+    private AstNode.Declaration resolveFunctionDeclaration(Ast.FunctionDeclare f, boolean blockDeclare) {
+        if (blockDeclare && Objects.equals(f.specifierList().getStorageClazz(), AstNode.StorageClass.Static)) {
+            throw new SemanticException("block function declaration contains static");
+        }
         identifiers.putFunc(f.identifier(), f);
         this.identifiers = this.identifiers.newScope();
         List<AstNode.Param> resolvedParams = f.params().stream()
@@ -92,8 +98,7 @@ public class Resolver {
 
     private AstNode.Param resolveParam(AstNode.Param param) {
         if (param instanceof Ast.VarParam v) {
-            identifiers.checkVar(v.identifier());
-            String newId = identifiers.putVar(v.identifier(), true);
+            String newId = identifiers.handleLocalVariable(v.identifier(), null);
             return new Ast.VarParam(v.type(), newId);
         } else {
             return param;
